@@ -1,0 +1,18 @@
+#loading-transition {
+    display: none !important;
+    z-index: 100000000;
+}
+
+#loading-whole-app {
+    display: none !important;
+    z-index: 100000000;
+}
+
+body:has(#_pages_content[data-dash-is-loading="true"]) #loading-transition {
+    display: flex !important;
+}
+
+body:has(#_pages_content[data-dash-is-loading="true"]) [id^="editable-table-"] {
+    visibility: hidden;
+}
+
