@@ -174,12 +174,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--host', type=str, default='192.168.101.44',
                         help='IP(v4) address of host machine where this Dashboard is hosted.')
-    parser.add_argument('-p', '--port', type=str, default='9001',
+    parser.add_argument('-p', '--port', type=str, default='9003',
                         help='Port to use')
 
     args = parser.parse_args()
 
     if args.host and args.port:
-        app.run_server(host=args.host, port=args.port, debug=False)
+        app.run_server(host=args.host, port=args.port, debug=True)
     else:
-        app.run_server(host='192.168.101.44', port='9001', debug=False)
+        app.run_server(host='192.168.101.44', port='9003', debug=True)
