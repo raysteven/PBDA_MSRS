@@ -77,6 +77,7 @@ def load_user(username):
     So we'll simply return a User object with the passed in username.
     """
     return User(username)
+######
 
 
 
