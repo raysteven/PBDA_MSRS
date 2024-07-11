@@ -16,7 +16,11 @@ import pandas as pd
 from PBTK import *
 from auto_aap import auto_aap
 
+from flask_login import current_user
+from utils.login_handler import require_login
+
 dash.register_page(__name__, path='/generate/final-report',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
+require_login(__name__)
 
 pgnum=2
 
@@ -97,115 +101,121 @@ def MultiplexerOutput(output_component: str, output_field: str):
 ######################################## Layout ########################################
 
 ########################################################################################################################################################################################################
-layout = html.Div([
-    *create_multiplexer('interval-report-check', 'disabled', 2),
-    html.Div([
-        html.H5('Runfolder', style={'font-weight': 'bold', 'fontFamily':'Montserrat, sans-serif', 'margin':'0'}),
-        html.P("Please input in YYYYMMDD format. (For example: 20230714)", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
-        html.Div([
-            dcc.Input(
-            id='input-runfolder',
-            type='text',
-            placeholder='Enter Runfolder Name',
-            required=True,
-            style={
-                'width': '300px',  # Adjust the width as needed
-                'margin': '10px auto',  # Center the input box horizontally with margin
-                'padding': '10px',  # Add padding to the input box
-                'border': '1px solid #ccc',  # Add a border with a lighter color
-                'borderRadius': '5px',  # Add rounded corners
-                'boxSizing': 'border-box',  # Ensure the padding and border are included in the width
-                'fontFamily':'Montserrat, sans-serif',
-                }
-            ,disabled=False),
-            
-        ])
+def layout():
+    if not current_user.is_authenticated:
+        return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
 
-    ], style={'margin':3}),
 
-    html.Div([
+    layout = html.Div([
+        *create_multiplexer('interval-report-check', 'disabled', 2),
         html.Div([
-            html.Br()
-        ])
-    ]),
-
-    # Body
-    html.Div([
-        html.Div([
-            html.H5('Metadata File', style={'font-weight': 'bold', 'margin':'0'}),
-            html.P("Please input only a CSV file.", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
-            dcc.Upload(
-                id='upload-metadata-file',
-                children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+            html.H5('Runfolder', style={'font-weight': 'bold', 'fontFamily':'Montserrat, sans-serif', 'margin':'0'}),
+            html.P("Please input in YYYYMMDD format. (For example: 20230714)", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
+            html.Div([
+                dcc.Input(
+                id='input-runfolder',
+                type='text',
+                placeholder='Enter Runfolder Name',
+                required=True,
                 style={
-                    'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                    'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                    'textAlign': 'center', 'margin': '10px'
-                },
-                multiple=False,
-                disabled=False
-            ),
-        ], style={'display': 'inline-block', 'width': '45%', 'margin':'20'}),
+                    'width': '300px',  # Adjust the width as needed
+                    'margin': '10px auto',  # Center the input box horizontally with margin
+                    'padding': '10px',  # Add padding to the input box
+                    'border': '1px solid #ccc',  # Add a border with a lighter color
+                    'borderRadius': '5px',  # Add rounded corners
+                    'boxSizing': 'border-box',  # Ensure the padding and border are included in the width
+                    'fontFamily':'Montserrat, sans-serif',
+                    }
+                ,disabled=False),
+                
+            ])
+
+        ], style={'margin':3}),
 
         html.Div([
-            html.H5('Result Sheet', style={'font-weight': 'bold', 'margin':'0'}),
-            html.P('Please input only a XLSX file that must contain a sheet named "Sheet1".', style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
-            dcc.Upload(
-                id='upload-result-sheet',
-                children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
-                style={
-                    'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                    'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                    'textAlign': 'center', 'margin': '10px'
-                },
-                multiple=False,
-                disabled=False
-            )
-        ], style={'display': 'inline-block', 'width': '45%', 'marginRight': '1.5%'}),
-    ], style={'display': 'flex', 'flexDirection': 'row', 'justifyContent': 'space-between', 'fontFamily':'Montserrat, sans-serif'}),
-    
-    html.Button('Generate Final Report!', id='button-generate-report', n_clicks=0, style={
-        'margin': '10px 0',
-        'padding': '10px 20px',
-        'background-color': '#4CAF50',
-        'color': 'white',
-        'border': 'none',
-        'border-radius': '5px',
-        'cursor': 'pointer',
-        'transition': 'background-color 0.3s ease',
-    }, disabled=False),
-    
-    html.Br(),
-    html.Br(),
+            html.Div([
+                html.Br()
+            ])
+        ]),
 
-    # Interval component for polling report status
-    dcc.Interval(
-        id='interval-report-check',
-        interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
-        n_intervals=0,
-        disabled=True,  # Start disabled and enable after report generation is triggered
-    ),
+        # Body
+        html.Div([
+            html.Div([
+                html.H5('Metadata File', style={'font-weight': 'bold', 'margin':'0'}),
+                html.P("Please input only a CSV file.", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
+                dcc.Upload(
+                    id='upload-metadata-file',
+                    children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                    style={
+                        'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                        'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                        'textAlign': 'center', 'margin': '10px'
+                    },
+                    multiple=False,
+                    disabled=False
+                ),
+            ], style={'display': 'inline-block', 'width': '45%', 'margin':'20'}),
 
-    dcc.Store(id='report-store'),
-    dcc.Download(id='download-report'),
-    
-
-
-    html.Div([
-        html.H5('Notification',style={'font-weight':'bold'}),
-        html.Div(id='output-container', style={"border": "0px solid black", "padding":"10px", "width":"45%"}),
+            html.Div([
+                html.H5('Result Sheet', style={'font-weight': 'bold', 'margin':'0'}),
+                html.P('Please input only a XLSX file that must contain a sheet named "Sheet1".', style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
+                dcc.Upload(
+                    id='upload-result-sheet',
+                    children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                    style={
+                        'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                        'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                        'textAlign': 'center', 'margin': '10px'
+                    },
+                    multiple=False,
+                    disabled=False
+                )
+            ], style={'display': 'inline-block', 'width': '45%', 'marginRight': '1.5%'}),
+        ], style={'display': 'flex', 'flexDirection': 'row', 'justifyContent': 'space-between', 'fontFamily':'Montserrat, sans-serif'}),
         
-    dcc.Loading(
-        id="loading-1",
-        type="default",
-        color="#2d82b5",
-        children=html.Div(id='output-container-2', style={"border": "0px solid black", "padding":"10px", "width":"45%"})
-    ),
-    
-    ], style={'fontFamily':'Montserrat, sans-serif'})
+        html.Button('Generate Final Report!', id='button-generate-report', n_clicks=0, style={
+            'margin': '10px 0',
+            'padding': '10px 20px',
+            'background-color': '#4CAF50',
+            'color': 'white',
+            'border': 'none',
+            'border-radius': '5px',
+            'cursor': 'pointer',
+            'transition': 'background-color 0.3s ease',
+        }, disabled=False),
+        
+        html.Br(),
+        html.Br(),
 
-], style={'margin': '20px'})
+        # Interval component for polling report status
+        dcc.Interval(
+            id='interval-report-check',
+            interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
+            n_intervals=0,
+            disabled=True,  # Start disabled and enable after report generation is triggered
+        ),
 
+        dcc.Store(id='report-store'),
+        dcc.Download(id='download-report'),
+        
+
+
+        html.Div([
+            html.H5('Notification',style={'font-weight':'bold'}),
+            html.Div(id='output-container', style={"border": "0px solid black", "padding":"10px", "width":"45%"}),
+            
+        dcc.Loading(
+            id="loading-1",
+            type="default",
+            color="#2d82b5",
+            children=html.Div(id='output-container-2', style={"border": "0px solid black", "padding":"10px", "width":"45%"})
+        ),
+        
+        ], style={'fontFamily':'Montserrat, sans-serif'})
+
+    ], style={'margin': '20px'})
+
+    return layout
 ########################################################################################################################################################################################################
 
 ######################################## Callbacks ########################################

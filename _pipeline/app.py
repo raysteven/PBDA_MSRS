@@ -19,6 +19,12 @@ from utils.login_handler import restricted_page
 from flask import Flask, request, redirect, session
 from flask_login import login_user, LoginManager, UserMixin, logout_user, current_user
 
+import dash_mantine_components as dmc
+
+
+### MANDATORY FOR DMC ###
+dash._dash_renderer._set_react_version('18.2.0')
+
 
 ######
 
@@ -45,7 +51,7 @@ def login_button_click():
 
 # Keep this out of source code repository - save in a file or a database
 #  passwords should be encrypted
-VALID_USERNAME_PASSWORD = {"test": "test", "hello": "world"}
+VALID_USERNAME_PASSWORD = {"admin": "admin", "Ray": "password"}
 
 
 # Updating the Flask Server configuration with Secret Key to encrypt the user session cookie
@@ -86,28 +92,37 @@ app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTST
 app.title = 'PBDA: Mass Spectrometry Reporting System (MSRS)'
 
 
-navbar = dbc.NavbarSimple(
+navbar = dmc.Group(
     children=[
-        dbc.NavItem(dbc.NavLink("Home", href="/")),
-        dbc.DropdownMenu(
-            children=[
-                dbc.DropdownMenuItem("Metadata File", href="/generate/metadata-file"),
-                dbc.DropdownMenuItem("Final Report", href="/generate/final-report"),
-            ],
-            nav=True,
-            in_navbar=True,
-            label="Generate Files",
-            style={'zIndex': 1030},  # High z-index to ensure it's on top
+        dmc.Anchor(
+            dmc.Button(
+                "Home",
+                styles={"root": {'fontFamily': 'Monaco, monospace', 'color': 'black', 'justifyContent': 'center', 'alignItems': 'center',}},
+                variant="subtle"  # or another variant that suits your design
+            ),
+            href="/"
         ),
-        html.Div(id="user-status-header")
+        dmc.Menu(
+            [
+                dmc.MenuTarget(dmc.Button("Generate Files", variant="subtle", c="black")),
+                dmc.MenuDropdown(
+                    [
+                        dmc.MenuItem("Metadata File", href="/generate/metadata-file"),
+                        dmc.MenuItem("Final Report", href="/generate/final-report"),
+                    ]
+                ),
+            ],
+            trigger="hover",
+        ),
+        
     ],
-    brand_href="/",
-    color="#FEF200",
-    dark=False,
-    #style={'overflow': 'visible'},  # Ensure navbar overflow is visible
+    align="center",
+    gap="0",
+    style={'zIndex': 1030, 'fontFamily': 'Monaco, monospace', 'color': 'black'} #, 'backgroundColor': '#FEF200'
 )
 
-app.layout = html.Div([
+app.layout = dmc.MantineProvider([
+    html.Div([
     dcc.Location(id='url', refresh=False),
 
     # Header
@@ -120,7 +135,8 @@ app.layout = html.Div([
                 html.P('Prodia Bioinformatics Dashboard Application (PBDA)', style={'margin':'0', 'font-weight':'bold'})
             ], style={'display': 'inline-block', 'verticalAlign': 'middle'}),
         ], style={'display': 'flex', 'alignItems': 'center', 'flexGrow': '1'}), # This div will grow to take up available space
-        navbar, # Navbar stays to the right
+        html.Div(id='navbar'), #except the Profile and Logout button
+        dmc.Group(id="user-status-header", styles={"root": {"paddingRight": 30, 'fontFamily': 'Monaco, monospace',}}),
     ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'marginBottom': '20px', 'backgroundColor': '#FEF200', 'fontFamily':'Montserrat, sans-serif', 'overflow':'visible'}),
     
 
@@ -133,10 +149,12 @@ app.layout = html.Div([
     ),
     html.Div(id='page-content'),
 ])
+])
 
 @app.callback(
     Output("user-status-header", "children"),
     Output('url','pathname'),
+    Output("navbar","children"),
     Input("url", "pathname"),
     Input({'index': ALL, 'type':'redirect'}, 'n_intervals')
 )
@@ -144,30 +162,41 @@ def update_authentication_status(path, n):
     ### logout redirect
     if n:
         if not n[0]:
-            return '', dash.no_update
+            return '', dash.no_update, navbar
         else:
-            return '', '/login'
+            return '', '/login', navbar
 
     ### test if user is logged in
     if current_user.is_authenticated:
         if path == '/login':
-            return dcc.Link("logout", href="/logout"), '/'
-        return dcc.Link("logout", href="/logout"), dash.no_update
+            return dmc.Group(children=[dcc.Link("Logout", href="/logout")]), '/', navbar
+        profile_menu = dmc.Menu(
+            [
+                dmc.MenuTarget(dmc.Button("Profile", variant="subtle", c="black")),
+                dmc.MenuDropdown(
+                    [
+                        dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
+                        dmc.MenuItem("Logout", href="/logout"),
+                    ]
+                ),
+            ])
+        #dmc.Group(children=[dmc.Text(f"Hi, {current_user.id}!"), dcc.Link("Logout", href="/logout")])
+        return profile_menu, dash.no_update, navbar
     else:
         ### if page is restricted, redirect to login and save path
         if path in restricted_page:
             session['url'] = path
-            return dcc.Link("login", href="/login"), '/login'
+            return dcc.Link("Login", href="/login"), '/login', dash.no_update
 
     ### if path not login and logout display login link
     if current_user and path not in ['/login', '/logout']:
-        return dcc.Link("login", href="/login"), dash.no_update
+        return dcc.Link("Login", href="/login"), dash.no_update, navbar
 
     ### if path login and logout hide links
     if path in ['/login', '/logout']:
-        return '', dash.no_update
+        return '', dash.no_update, dash.no_update
 
-
+#dmc.Group(dmc.Text(f"Hi, {current_user.id}!"), )
 
     
 if __name__ == "__main__":

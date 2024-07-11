@@ -15,7 +15,11 @@ import threading
 from PBTK import *
 from lkj_to_metadata import lkj_to_metadata
 
+from flask_login import current_user
+from utils.login_handler import require_login
+
 dash.register_page(__name__, path='/generate/metadata-file',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
+require_login(__name__)
 
 pgnum=1
 
@@ -24,98 +28,101 @@ current_directory = os.getcwd()
 parent_directory = os.path.dirname(current_directory)
 input_temp_dir = os.path.join(os.getcwd(),'input_temp')
 
+def layout():
+    if not current_user.is_authenticated:
+        return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
+    
+    layout = html.Div(
+        children=[
+                html.Div(
+                    className="div-app",
+                    id=f"div-app-{pgnum}",
+                    children = [ #  app layout here
 
-layout = html.Div(
-     children=[
-             html.Div(
-                 className="div-app",
-                 id=f"div-app-{pgnum}",
-                 children = [ #  app layout here
-
-                            html.Div([
                                 html.Div([
-                                    html.H5('Runfolder', style={'font-weight': 'bold', 'fontFamily':'Montserrat, sans-serif', 'margin':'0'}),
-                                    html.P("Please input in YYYYMMDD format. (For example: 20230714)", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
                                     html.Div([
-                                        dcc.Input(
-                                        id='input-runfolder',
-                                        type='text',
-                                        placeholder='Enter Runfolder Name',
-                                        required=True,
+                                        html.H5('Runfolder', style={'font-weight': 'bold', 'fontFamily':'Montserrat, sans-serif', 'margin':'0'}),
+                                        html.P("Please input in YYYYMMDD format. (For example: 20230714)", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
+                                        html.Div([
+                                            dcc.Input(
+                                            id='input-runfolder',
+                                            type='text',
+                                            placeholder='Enter Runfolder Name',
+                                            required=True,
+                                            style={
+                                                'width': '300px',  # Adjust the width as needed
+                                                'margin': '10px auto',  # Center the input box horizontally with margin
+                                                'padding': '10px',  # Add padding to the input box
+                                                'border': '1px solid #ccc',  # Add a border with a lighter color
+                                                'borderRadius': '5px',  # Add rounded corners
+                                                'boxSizing': 'border-box',  # Ensure the padding and border are included in the width
+                                                'fontFamily':'Montserrat, sans-serif',
+                                                }
+                                            )
+                                        ])
+
+                                    ], style={'margin':3}),
+
+
+                                    html.Div([
+                                        html.Div([
+                                            html.Br()
+                                        ])
+                                    ]),
+
+                                    html.Div([
+                                    html.H5('LKJ File', style={'font-weight': 'bold', 'margin':'0'}),
+                                    html.P("Please input only a XLS file.", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
+                                    dcc.Upload(
+                                        id='upload-lkj-file',
+                                        children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
                                         style={
-                                            'width': '300px',  # Adjust the width as needed
-                                            'margin': '10px auto',  # Center the input box horizontally with margin
-                                            'padding': '10px',  # Add padding to the input box
-                                            'border': '1px solid #ccc',  # Add a border with a lighter color
-                                            'borderRadius': '5px',  # Add rounded corners
-                                            'boxSizing': 'border-box',  # Ensure the padding and border are included in the width
-                                            'fontFamily':'Montserrat, sans-serif',
-                                            }
-                                        )
-                                    ])
+                                            'width': '100%', 'height': '60px', 'lineHeight': '60px',
+                                            'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
+                                            'textAlign': 'center', 'margin': '10px'
+                                            },
+                                            multiple=False
+                                        ),
+                                    ], style={'display': 'inline-block', 'width': '45%', 'margin':'20'}),
+                                    
+                                    html.Button('Generate Metadata File!', id='button-generate-metadata-file', n_clicks=0, style={
+                                        'margin': '50px',
+                                        'padding': '10px 20px',
+                                        'background-color': '#4CAF50',
+                                        'color': 'white',
+                                        'border': 'none',
+                                        'border-radius': '5px',
+                                        'cursor': 'pointer',
+                                        'transition': 'background-color 0.3s ease',
+                                    }),
 
-                                ], style={'margin':3}),
+                                    html.Br(),
 
-
-                                html.Div([
-                                    html.Div([
-                                        html.Br()
-                                    ])
-                                ]),
-
-                                html.Div([
-                                html.H5('LKJ File', style={'font-weight': 'bold', 'margin':'0'}),
-                                html.P("Please input only a XLS file.", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
-                                dcc.Upload(
-                                    id='upload-lkj-file',
-                                    children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
-                                    style={
-                                        'width': '100%', 'height': '60px', 'lineHeight': '60px',
-                                        'borderWidth': '1px', 'borderStyle': 'dashed', 'borderRadius': '5px',
-                                        'textAlign': 'center', 'margin': '10px'
-                                        },
-                                        multiple=False
+                                    # Interval component for polling metadata status
+                                    dcc.Interval(
+                                        id='interval-metadata-file-check',
+                                        interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
+                                        n_intervals=0,
+                                        disabled=True,  # Start disabled and enable after metadata generation is triggered
                                     ),
-                                ], style={'display': 'inline-block', 'width': '45%', 'margin':'20'}),
-                                
-                                html.Button('Generate Metadata File!', id='button-generate-metadata-file', n_clicks=0, style={
-                                    'margin': '50px',
-                                    'padding': '10px 20px',
-                                    'background-color': '#4CAF50',
-                                    'color': 'white',
-                                    'border': 'none',
-                                    'border-radius': '5px',
-                                    'cursor': 'pointer',
-                                    'transition': 'background-color 0.3s ease',
-                                }),
 
-                                html.Br(),
+                                    dcc.Store(id='metadata-file-store'),
+                                    dcc.Download(id='download-metadata-file'),
 
-                                # Interval component for polling metadata status
-                                dcc.Interval(
-                                    id='interval-metadata-file-check',
-                                    interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
-                                    n_intervals=0,
-                                    disabled=True,  # Start disabled and enable after metadata generation is triggered
-                                ),
-
-                                dcc.Store(id='metadata-file-store'),
-                                dcc.Download(id='download-metadata-file'),
-
-                                html.Div([
-                                    html.H5('Notification',style={'font-weight':'bold'}),
-                                    html.Div(id='notification-container-generate-metadata-file', style={"border": "0px solid black", "padding":"10px", "width":"97.5%"})
-                                ], style={'fontFamily':'Montserrat, sans-serif'})
+                                    html.Div([
+                                        html.H5('Notification',style={'font-weight':'bold'}),
+                                        html.Div(id='notification-container-generate-metadata-file', style={"border": "0px solid black", "padding":"10px", "width":"97.5%"})
+                                    ], style={'fontFamily':'Montserrat, sans-serif'})
 
 
 
-                            ], style={'margin':'20px'})
+                                ], style={'margin':'20px'})
 
-                ]
-             )
-         ]
-     )
-
+                    ]
+                )
+            ]
+        )
+    return layout
 
     #@dash_app.callback(
     #    Output('page-1-content', 'children'),
