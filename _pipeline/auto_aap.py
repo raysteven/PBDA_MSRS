@@ -10,8 +10,8 @@ import zipfile
 import pandas as pd
 from copy import deepcopy
 
-db_path = os.path.join(workdir,'database_aap_v1.1.csv')
-
+db_path = os.path.join(workdir,'database_aap_v1.1.0.csv')
+print("=====> DB PATH:",db_path)
 
 def result_csv_create(wokdir_parent_directory, runfolder, report_df):
     report_df = deepcopy(report_df)

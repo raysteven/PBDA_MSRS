@@ -8,6 +8,62 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 
+import time
+from datetime import datetime
+
+def calculate_age(birth_date_str):
+    # Parse the birth date string to a datetime object
+    birth_date = datetime.strptime(birth_date_str, "%d-%m-%Y")
+    
+    # Get the current date
+    current_date = datetime.now()
+    
+    # Calculate the difference in years
+    years_difference = current_date.year - birth_date.year
+    
+    # Calculate the difference in months
+    months_difference = current_date.month - birth_date.month
+    
+    # Calculate the difference in days
+    days_difference = current_date.day - birth_date.day
+    
+    # Adjust the months and days difference
+    if days_difference < 0:
+        months_difference -= 1
+        days_difference += (birth_date.replace(year=current_date.year, month=current_date.month) - birth_date.replace(year=current_date.year, month=current_date.month-1)).days
+    
+    if months_difference < 0:
+        years_difference -= 1
+        months_difference += 12
+    
+    # Calculate the age in decimal
+    age_decimal = years_difference + (months_difference / 12) + (days_difference / 365.25)
+    
+    return age_decimal
+
+
+age_class_dict = {
+    "class_1":{"bottom":"reference_range_bottom_anak_1","up":"reference_range_up_anak_1"},
+    "class_2":{"bottom":"reference_range_bottom_anak_2","up":"reference_range_up_anak_2"},
+    "class_3":{"bottom":"reference_range_bottom_anak_3","up":"reference_range_up_anak_3"},
+    "class_4":{"bottom":"reference_range_bottom_dewasa","up":"reference_range_up_dewasa"}
+}
+
+
+def determine_age_class(age):
+    if age < 1/12:
+        age_class = "class_1"
+    elif 1/12 <= age <= 12/12:
+        age_class = "class_2"
+    elif  12/12 < age <= 19:
+        age_class = "class_3"
+    elif age > 19:
+        age_class = "class_4"
+    else:
+        age_class = "class_4" 
+    return age_class
+
+
 # Custom serializer for non-serializable data types
 def custom_serializer(obj):
     if isinstance(obj, np.integer):
@@ -19,11 +75,11 @@ def custom_serializer(obj):
     else:
         raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
-def determine_result(amino_acid, measured_result, ref_db):
+def determine_result(amino_acid, measured_result, ref_db, age_class):
     index = amino_acid
-
-    optimal_bottom = ref_db.at[index,'reference_range_bottom']
-    optimal_up = ref_db.at[index,'reference_range_up']
+    
+    optimal_bottom = ref_db.at[index,age_class_dict[age_class]["bottom"]]
+    optimal_up = ref_db.at[index,age_class_dict[age_class]["up"]]
     
     if optimal_bottom <= measured_result <= optimal_up:
         interpretation_result = ref_db.at[index,'result_optimal']
@@ -58,19 +114,19 @@ def normalize_value(x, a, b, c, d):
         # Normalize between 75 and 100 for x in [c, d]
         return 85 + 15 * (x - c) / (d - c)
 
-def create_gauge_chart(measured_result, amino_acid, ref_db, outdir_path):
+def create_gauge_chart(age_class, measured_result, amino_acid, ref_db, outdir_path):
     index = amino_acid
 
     #menyesuaikan chartnya dengan kebutuhan Lab MS dimana kalau value terukur masih dalam reference range, sebenarnya masih hijau tapi mepet di perbatasan.
     #batas atas dan bawah dilebihi 30% -> batas atas * 1,3 & batas bawah * 0.7 
 
     reference_range_bottom = ref_db.at[index,'linearity_bottom']
-    optimal_bottom = ref_db.at[index,'reference_range_bottom']
-    optimal_up = ref_db.at[index,'reference_range_up']
+    optimal_bottom = ref_db.at[index,age_class_dict[age_class]["bottom"]]
+    optimal_up = ref_db.at[index,age_class_dict[age_class]["up"]]
     reference_range_up = ref_db.at[index,'linearity_top']
 
-    real_optimal_bottom = ref_db.at[index,'optimal_bottom']
-    real_optimal_up = ref_db.at[index,'optimal_up']
+    #real_optimal_bottom = ref_db.at[index,'optimal_bottom']
+    #real_optimal_up = ref_db.at[index,'optimal_up']
 
     value = measured_result
     
@@ -80,8 +136,8 @@ def create_gauge_chart(measured_result, amino_acid, ref_db, outdir_path):
     normalized_reference_range_up = normalize_value(reference_range_up, a=reference_range_bottom, b=optimal_bottom, c=optimal_up, d=reference_range_up)
     normalized_value = normalize_value(max(min(value,reference_range_up), reference_range_bottom), a=reference_range_bottom, b=optimal_bottom, c=optimal_up, d=reference_range_up)
 
-    normalized_real_optimal_bottom = normalize_value(real_optimal_bottom, a=reference_range_bottom, b=optimal_bottom, c=optimal_up, d=reference_range_up)
-    normalized_real_optimal_up = normalize_value(real_optimal_up, a=reference_range_bottom, b=optimal_bottom, c=optimal_up, d=reference_range_up)
+    #normalized_real_optimal_bottom = normalize_value(real_optimal_bottom, a=reference_range_bottom, b=optimal_bottom, c=optimal_up, d=reference_range_up)
+    #normalized_real_optimal_up = normalize_value(real_optimal_up, a=reference_range_bottom, b=optimal_bottom, c=optimal_up, d=reference_range_up)
 
     ### logic perbatasan/dipepet ###
     #if normalized_optimal_bottom <= normalized_value <= normalized_real_optimal_bottom:
@@ -183,6 +239,7 @@ def json_create(report_df, ref_db, runfolder, workdir):
         report_dict['metadata']['Age'] = report_df['usia'][sample_enumerator]
         report_dict['metadata']['Lab Number'] = report_df['lab_number'][sample_enumerator]
         report_dict['metadata']['Ref. Number'] = report_df['ref_number'][sample_enumerator]
+        report_dict['metadata']['DoB'] = report_df['dob'][sample_enumerator]
 
         ##### Create out_folder
         out_folder = os.path.join(runfolder, patient_id)
@@ -197,7 +254,10 @@ def json_create(report_df, ref_db, runfolder, workdir):
         if not os.path.exists(outdir_path):
             # Create the folder
             os.makedirs(outdir_path)
-
+        
+        birth_date_str = report_dict['metadata']['DoB']
+        age = calculate_age(birth_date_str)
+        age_class = determine_age_class(age)
 
         #####Create test_result
         report_dict['test_result']
@@ -207,11 +267,11 @@ def json_create(report_df, ref_db, runfolder, workdir):
             try: measured_value = int(report_df[index][sample_enumerator])
             except: measured_value = 0
             report_dict['test_result'][index]['measured_value'] = measured_value
-            ref_value = str(ref_db.at[index,'reference_range_bottom']) + ' - '+ str(ref_db.at[index,'reference_range_up'])
+            ref_value = str(ref_db.at[index,age_class_dict[age_class]["bottom"]]) + ' - '+ str(ref_db.at[index,age_class_dict[age_class]["up"]])
             report_dict['test_result'][index]['ref_value'] = ref_value
-            report_dict['test_result'][index]['result_interpretation'] = determine_result(amino_acid=index, measured_result=measured_value, ref_db=ref_db)
+            report_dict['test_result'][index]['result_interpretation'] = determine_result(amino_acid=index, measured_result=measured_value, ref_db=ref_db, age_class=age_class)
             ##### Create gauge charts
-            create_gauge_chart(measured_result=measured_value, amino_acid=index,ref_db=ref_db,outdir_path=outdir_path)
+            create_gauge_chart(age_class=age_class, measured_result=measured_value, amino_acid=index,ref_db=ref_db,outdir_path=outdir_path)
 
         json_str = json.dumps(report_dict, indent=4, default=custom_serializer)
         #### Write JSON string to a file

@@ -1,0 +1,4 @@
+patient_id,lab_number,nama,dob,gender,test_name,usia,ref_number
+R2405300058a-DPS-2405280019,R2405300058a,John Peter Teasdale,17-06-1988,L,Aspartic Acid (ASP)-Amino Profile-21,35 years,DPS-2405280019
+R2406010539a-DPS-2406010020,R2406010539a,Ruby Studer,30-11-1947,P,Aspartic Acid (ASP)-Amino Profile-21,76 years,DPS-2406010020
+R2406010906a-KBY-2406010031,R2406010906a,Muhammad Subhan Aksa,11-10-1986,L,Aspartic Acid (ASP)-Amino Profile-21,37 years,KBY-2406010031
