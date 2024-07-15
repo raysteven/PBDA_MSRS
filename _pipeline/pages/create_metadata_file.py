@@ -191,7 +191,7 @@ def unified_callback(n_clicks, n_intervals, lkj_file_filename, runfolder, metada
             
             ###>>>>>>>>>>>>>>>>>>>>>>>>> FILE MOVING
             print(runfolder)
-            runfolder_dir = os.path.join(parent_directory, runfolder)
+            runfolder_dir = os.path.join(parent_directory, '_lkj_metadata' ,runfolder)
             # Ensure the destination directory exists
             if not os.path.exists(runfolder_dir):
                 os.makedirs(runfolder_dir, exist_ok=True)
