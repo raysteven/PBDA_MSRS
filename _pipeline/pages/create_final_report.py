@@ -1,7 +1,6 @@
 import dash
 from dash import dcc, html, callback, ctx, callback_context
 from dash.dependencies import Input, Output, State
-from dash import callback_context
 
 import base64
 import os
@@ -51,51 +50,6 @@ def log_current_time():
 
     return displayed_str
 
-from time import sleep, time
-from typing import List, Optional
-
-from dash import callback_context
-from dash.dependencies import ALL, Input, Output
-from dash.exceptions import PreventUpdate
-
-
-MULTIPLEXER_OUTPUTS = {}
-
-def get_triggered() -> Optional[str]:
-    ctx = callback_context
-    if not ctx.triggered:
-        return
-    return ctx.triggered[0]['prop_id'].split('.')[0]
-
-def create_multiplexer(output_component: str, output_field: str, count: int) -> List:
-    store_component = f'{output_component}-{output_field}-store'
-
-    @callback(
-        Output(output_component, output_field),  # Output is an arbitrary dash component
-        Input({'id': store_component, 'idx': ALL}, 'data'),  # Input is always a dcc.Store()
-        prevent_initial_call=True
-    )
-    def multiplexer(_):
-        triggered = get_triggered()
-        if triggered is None:
-            raise PreventUpdate
-
-        inputs = callback_context.inputs
-        for k, v in inputs.items():
-            id_ = k.split('.')[0]
-            if id_ == triggered:
-                return v
-
-        raise PreventUpdate
-
-    return [dcc.Store({'id': store_component, 'idx': idx}, data=None) for idx in range(count)]
-
-
-def MultiplexerOutput(output_component: str, output_field: str):
-    store_component = f'{output_component}-{output_field}-store'
-    MULTIPLEXER_OUTPUTS[store_component] = idx = MULTIPLEXER_OUTPUTS.setdefault(store_component, -1) + 1
-    return Output({'id': store_component, 'idx': idx}, 'data')
-
 ########################################################################################################################################################################################################
 
 ######################################## Layout ########################################
@@ -107,7 +61,7 @@ def layout():
 
 
     layout = html.Div([
-        *create_multiplexer('interval-report-check', 'disabled', 2),
+        #*create_multiplexer('interval-report-check', 'disabled', 2),
         html.Div([
             html.H5('Runfolder', style={'font-weight': 'bold', 'fontFamily':'Montserrat, sans-serif', 'margin':'0'}),
             html.P("Please input in YYYYMMDD format. (For example: 20230714)", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
@@ -243,7 +197,7 @@ def update_result_sheet(result_filename, result_contents):
 
         # Check if the file contains a sheet named "Sheet1"
         try:
-            xls = pd.ExcelFile(metadata_file_path)
+            xls = pd.ExcelFile(metadata_file_path, engine='openpyxl')
             if 'Sheet1' not in xls.sheet_names:
                 return html.Div(['The Excel file must contain a sheet named "Sheet1".'], style={'backgroundColor': 'red', 'color': 'white'})
             xls.close()
@@ -278,7 +232,7 @@ def update_metadata_file(metadata_filename, metadata_contents):
 
 @callback(
     [Output('output-container', 'children'),
-     MultiplexerOutput('interval-report-check', 'disabled'),
+     Output('interval-report-check', 'disabled'),
      Output('input-runfolder', 'disabled'),
      Output('upload-metadata-file', 'disabled'),
      Output('upload-result-sheet', 'disabled'),
@@ -288,7 +242,6 @@ def update_metadata_file(metadata_filename, metadata_contents):
     [State('upload-metadata-file', 'filename'),
      State('upload-result-sheet', 'filename'),
      State('input-runfolder', 'value')],
-     allow_duplicate=True,
 )
 def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_filename, runfolder):
     if n_clicks > 0:
@@ -306,7 +259,8 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
                     )
         
         ###>>>>>>>>>>>>>>>>>>>>>>>>> FILE MOVING
-        print(runfolder)
+
+        print('Executing runfolder:',runfolder)
         runfolder_dir = os.path.join(parent_directory, runfolder)
         # Check if the directory exists
         if os.path.exists(runfolder_dir):
@@ -359,8 +313,6 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
 
         print(f'Directory {input_temp_dir} has been emptied.')
 
-
-
         ###<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FILE MOVING
 
         # Delete existing ZIP file if it exists
@@ -372,7 +324,6 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
         metadata_file_path = os.path.join(runfolder_dir, metadata_file_filename)
         result_sheet_path = os.path.join(runfolder_dir, result_sheet_filename)
 
-
         threading.Thread(target=generate_report_async, args=(runfolder, metadata_file_path, result_sheet_path)).start()
 
         return f'{log_current_time()} All file has been uploaded. Generating the final report. Do not refresh the webpage!', False, True, True, True, True
@@ -382,13 +333,14 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
 # Callback to check report status and trigger download
 @callback(
     [Output('output-container-2', 'children'),
-     MultiplexerOutput('interval-report-check', 'disabled'),
+     Output('interval-report-check', 'disabled',allow_duplicate=True),
      Output('download-report', 'data')],
     [Input('interval-report-check', 'n_intervals')],
     [State('upload-metadata-file', 'filename'),
      State('upload-result-sheet', 'filename'),
      State('input-runfolder', 'value')],
-    prevent_initial_call=True
+    prevent_initial_call=True,
+    
 )
 def download_report(n_intervals, metadata_file_filename, result_sheet_filename, runfolder):
     if n_intervals > 0:
