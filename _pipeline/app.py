@@ -80,7 +80,6 @@ def load_user(username):
 ######
 
 
-
 ######
 
 current_directory = os.getcwd()
@@ -152,6 +151,8 @@ app.layout = dmc.MantineProvider([
 ])
 ])
 
+
+
 @app.callback(
     Output("user-status-header", "children"),
     Output('url','pathname'),
@@ -181,7 +182,8 @@ def update_authentication_status(path, n):
                     ]
                 ),
             ])
-        #dmc.Group(children=[dmc.Text(f"Hi, {current_user.id}!"), dcc.Link("Logout", href="/logout")])
+        print(current_user.id)
+        #print(dir(current_user))
         return profile_menu, dash.no_update, navbar
     else:
         ### if page is restricted, redirect to login and save path
@@ -197,7 +199,7 @@ def update_authentication_status(path, n):
     if path in ['/login', '/logout']:
         return '', dash.no_update, dash.no_update
 
-#dmc.Group(dmc.Text(f"Hi, {current_user.id}!"), )
+
 
     
 if __name__ == "__main__":

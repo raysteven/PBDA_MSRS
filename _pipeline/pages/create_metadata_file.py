@@ -28,6 +28,8 @@ current_directory = os.getcwd()
 parent_directory = os.path.dirname(current_directory)
 input_temp_dir = os.path.join(os.getcwd(),'input_temp')
 
+#print(current_user.id)
+
 def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])

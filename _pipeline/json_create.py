@@ -101,6 +101,7 @@ def normalize_value(x, a, b, c, d):
     Returns:
     - The normalized value of x according to the custom scheme.
     """
+
     if x < a or x > d:
         raise ValueError("The value x must be within the range [a, d].")
     
@@ -233,7 +234,6 @@ def json_create(report_df, ref_db, runfolder, workdir):
         report_dict = {'metadata':{},'test_result':{}}
         sample_enumerator = i
         report_dict['metadata']['Nama'] = report_df['nama'][sample_enumerator]
-
         patient_id = report_df['patient_id'][sample_enumerator]
 
         report_dict['metadata']['Age'] = report_df['usia'][sample_enumerator]

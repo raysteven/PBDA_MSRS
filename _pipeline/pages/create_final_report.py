@@ -59,7 +59,7 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
 
-
+    
     layout = html.Div([
         #*create_multiplexer('interval-report-check', 'disabled', 2),
         html.Div([
