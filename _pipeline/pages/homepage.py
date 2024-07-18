@@ -6,6 +6,9 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
 import os
+import glob
+import json
+import pandas as pd
 
 from flask_login import current_user
 from utils.login_handler import require_login
@@ -15,6 +18,46 @@ dash.register_page(__name__, path='/',name='PBDA: MSRS Reporting System',title='
 require_login(__name__)
 
 pgnum = 0
+
+
+current_directory = os.getcwd()
+# Get the parent directory
+parent_directory = os.path.dirname(current_directory)
+
+
+
+def create_dataframe_from_json(base_dir=os.path.join(parent_directory,'Amino_Acid_Panel','Final_Report')):
+    # Find all JSON files
+    json_files = glob.glob(os.path.join(base_dir, '**', '*.json'), recursive=True)
+    
+    # Get file modification times
+    files_with_mtime = [(file, os.path.getmtime(file)) for file in json_files]
+    
+    # Sort files by modification time (oldest first)
+    files_with_mtime.sort(key=lambda x: x[1])
+    
+    # Read JSON files and extract data
+    data = []
+    for i, (file, _) in enumerate(files_with_mtime):
+        with open(file, 'r') as f:
+            json_data = json.load(f)
+            json_data['Run No.'] = i + 1  # Add the numbering
+            data.append(json_data)
+    
+    # Create DataFrame
+    df = pd.DataFrame(data)
+    
+    # Sort DataFrame by 'number' column in descending order
+    df = df.sort_values(by='Run No.', ascending=False).reset_index(drop=True)
+    
+    # Move 'number' column to the first position
+    cols = ['Run No.'] + [col for col in df.columns if col != 'Run No.']
+    df = df[cols]
+    
+    return df
+
+df = create_dataframe_from_json()
+print(df)
 
 # Home page layout
 
