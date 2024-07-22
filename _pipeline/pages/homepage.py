@@ -13,12 +13,14 @@ import pandas as pd
 from flask_login import current_user
 from utils.login_handler import require_login
 
+import dash_ag_grid as dag
+import dash_mantine_components as dmc
 
 dash.register_page(__name__, path='/',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
 require_login(__name__)
 
-pgnum = 0
-
+pgname = __name__.split('.')[-1]
+rows_per_page = 10
 
 current_directory = os.getcwd()
 # Get the parent directory
@@ -26,54 +28,152 @@ parent_directory = os.path.dirname(current_directory)
 
 
 
-def create_dataframe_from_json(base_dir=os.path.join(parent_directory,'Amino_Acid_Panel','Final_Report')):
-    # Find all JSON files
-    json_files = glob.glob(os.path.join(base_dir, '**', '*.json'), recursive=True)
+def create_dataframe_from_json(directories=None):
     
-    # Get file modification times
-    files_with_mtime = [(file, os.path.getmtime(file)) for file in json_files]
+    if directories is None:
+        directories = [os.path.join(parent_directory, 'Amino_Acid_Panel', 'Final_Report'),
+                       os.path.join(parent_directory, 'Amino_Acid_Panel', 'LKJ_Metadata'),
+                       os.path.join(parent_directory, 'Cortisol', 'Final_Report'),
+                       os.path.join(parent_directory, 'Cortisol', 'LKJ_Metadata'),
+                       ]
     
-    # Sort files by modification time (oldest first)
-    files_with_mtime.sort(key=lambda x: x[1])
-    
-    # Read JSON files and extract data
+    # Initialize a list to store data from all JSON files
     data = []
-    for i, (file, _) in enumerate(files_with_mtime):
-        with open(file, 'r') as f:
-            json_data = json.load(f)
-            json_data['Run No.'] = i + 1  # Add the numbering
-            data.append(json_data)
+
+    # Process each directory
+    for base_dir in directories:
+        # Find all JSON files in the current directory
+        json_files = glob.glob(os.path.join(base_dir, '**', '*.json'), recursive=True)
+        
+        # Get file modification times
+        files_with_mtime = [(file, os.path.getmtime(file)) for file in json_files]
+        
+        # Sort files by modification time (oldest first)
+        files_with_mtime.sort(key=lambda x: x[1])
+        
+        # Read JSON files and extract data
+        for i, (file, _) in enumerate(files_with_mtime):
+            with open(file, 'r') as f:
+                json_data = json.load(f)
+                #json_data['No'] = i + 1  # Add the numbering if needed
+                data.append(json_data)
     
-    # Create DataFrame
+    # Create DataFrame from the collected data
     df = pd.DataFrame(data)
     
-    # Sort DataFrame by 'number' column in descending order
-    df = df.sort_values(by='Run No.', ascending=False).reset_index(drop=True)
-    
-    # Move 'number' column to the first position
-    cols = ['Run No.'] + [col for col in df.columns if col != 'Run No.']
-    df = df[cols]
+    # Optionally sort and reindex DataFrame
+    # df = df.sort_values(by='No', ascending=False).reset_index(drop=True)
+    # Move 'No' column to the first position if needed
+    # cols = ['No'] + [col for col in df.columns if col != 'No']
+    # df = df[cols]
     
     return df
 
-df = create_dataframe_from_json()
-print(df)
 
+
+
+def get_main_table_x(df):
+    
+    main_table = dash_table.DataTable(
+                    id=f'editable-table-{pgname}',
+                    columns=[{"name": i, "id": i} for i in df.columns if i != "Variant_Record"],
+                    data=df.to_dict('records'), #on Variant Vault -> df.iloc[:rows_per_page].to_dict('records') -> to save memory when render large data, but it is not necessary for this case.
+                    editable=False,
+                    style_table={
+                        'minWidth': '100%',
+                        'overflowX': 'auto'  # Ensures horizontal scrolling if necessary
+                    },
+                    style_data={
+                        'fontSize': '14px',
+                        'whiteSpace': 'normal',  # Allows text wrapping within cells
+                        'height': 'auto',  # Adjusts row height to content
+                        'minWidth': '50px',  # Minimum width for all data cells
+                    },
+                    style_header={
+                        'fontSize': '14px',
+                        'fontWeight': 'bold',
+                        'whiteSpace': 'normal',  # Allows text wrapping within header cells
+                        'height': 'auto',  # Adjusts header height to content
+                        'minWidth': '50px',  # Minimum width for header cells
+                    },
+                    style_cell_conditional=[
+                        # Apply custom minWidth for specific columns here if needed
+                        # Example:
+                        {'if': {'column_id': 'user'},
+                        'minWidth': '10px',  'maxWidth': '10px'},
+                    ],
+                    #fixed_columns={'headers': True, 'data': 3},
+                    page_current=0,
+                    page_size=5, #rows_per_page
+                    page_action='native', #'native', 'custom', 'none'
+                    virtualization=False,
+                    cell_selectable=True,
+                    sort_action="native",
+                    sort_mode="multi",
+                )
+    
+    return main_table
+
+def get_main_table(df):
+
+    columnDefs = [
+        {
+        "field":"Date Created",
+        "filter": "agDateColumnFilter",
+        "checkboxSelection": True,
+        "headerCheckboxSelection": True,
+        },
+        ] + [{"field": i} for i in ["Time Created","User","Test Name","Result Type"]] + [
+            {
+                "field":"Download Link","cellRenderer": "markdown"
+            }]
+    
+    defaultColDef = {
+        "flex": 1,
+        "minWidth": 50,
+        #"filter": "agTextColumnFilter",
+        "filter": True, 
+        "sortable": True, "floatingFilter": True,
+    }    
+    
+    main_table = dag.AgGrid(
+        id="grid-filter-model-multiple-conditions",
+        rowData=df.to_dict("records"),
+        columnDefs=columnDefs,
+        defaultColDef=defaultColDef,
+        columnSize="sizeToFit",
+        filterModel={},
+        dashGridOptions={
+                "rowSelection": "multiple",
+                "pagination": True,
+                "paginationAutoPageSize": True,
+                "animateRows": True,}
+    )
+
+    return main_table
 # Home page layout
 
 def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
-    
+
+    df = create_dataframe_from_json()
+    #print(df)
+
+    main_table = get_main_table(df)
 
     layout = html.Div(
         children=[
 
                 html.Div(
                     className="div-app",
-                    id=f"div-app-{pgnum}",
+                    id=f"div-app-{pgname}",
                     children = [ #  app layout here
-
+                        html.Div([
+                            dmc.Title(f"History Table", order=3),
+                            dmc.Space(h=20),
+                            main_table
+                        ], style={'margin':'20px'}),
                         html.Div([
                             html.H5('Home Page', style={'margin-top':'20px'}),
                             html.Div([
@@ -85,7 +185,7 @@ def layout():
                             html.H5('Example Input and Output Files'),
                             html.Div([
                             html.P([
-                                    dcc.Download(id=f'download-file-{pgnum}'),
+                                    dcc.Download(id=f'download-file-{pgname}'),
                                     
                                     html.A(
                                         'LKJ',

@@ -21,7 +21,7 @@ from utils.login_handler import require_login
 dash.register_page(__name__, path='/generate/final-report',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
 require_login(__name__)
 
-pgnum=2
+pgname = __name__.split('.')[-1]
 
 current_directory = os.getcwd()
 # Get the parent directory

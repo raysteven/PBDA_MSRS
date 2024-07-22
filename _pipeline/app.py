@@ -20,7 +20,7 @@ from flask import Flask, request, redirect, session
 from flask_login import login_user, LoginManager, UserMixin, logout_user, current_user
 
 import dash_mantine_components as dmc
-
+from dash_iconify import DashIconify
 
 ### MANDATORY FOR DMC ###
 dash._dash_renderer._set_react_version('18.2.0')
@@ -92,33 +92,128 @@ app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTST
 app.title = 'PBDA: Mass Spectrometry Reporting System (MSRS)'
 
 
+# Common text style for consistency
+text_style = {'fontFamily': 'Monaco, monospace', 'color': 'black'}
+
 navbar = dmc.Group(
     children=[
-        dmc.Anchor(
-            dmc.Button(
-                "Home",
-                styles={"root": {'fontFamily': 'Monaco, monospace', 'color': 'black', 'justifyContent': 'center', 'alignItems': 'center',}},
-                variant="subtle"  # or another variant that suits your design
-            ),
-            href="/"
+        dmc.Button(
+            id="toggle-button",
+            children=[
+                DashIconify(icon="mdi:menu", width=35, height=35)
+            ],
+            variant="subtle",
+            color="black"
         ),
-        dmc.Menu(
-            [
-                dmc.MenuTarget(dmc.Button("Generate Files", variant="subtle", c="black")),
-                dmc.MenuDropdown(
-                    [
-                        dmc.MenuItem("Metadata File", href="/generate/metadata-file"),
-                        dmc.MenuItem("Final Report", href="/generate/final-report"),
+        dmc.Drawer(
+            title=dmc.Title(f"Menu", order=2),
+            id="drawer-simple",
+            padding="md",
+            zIndex=10000,
+            position='right',
+            children=[
+
+                html.Div(id="user-status-header-x"),
+                dcc.Link(
+                    dmc.Button(
+                        children=[
+                            DashIconify(icon="mdi:home", width=20, height=20),
+                            #dmc.Group(id="user-status-header", styles={"root": {"paddingRight": 30, 'fontFamily': 'Monaco, monospace',}}),
+                            #" Home"
+                        ],
+                        styles={"root": text_style},
+                        variant="subtle"
+                    ),
+                    href="/"
+                ),
+                dmc.Accordion(
+                    children=[
+                        dmc.AccordionItem(
+                            value="generate-files",
+                            children=[
+                                dmc.AccordionControl(
+                                    children=[
+                                        DashIconify(icon="tabler:user", width=20, height=20),
+                                        " Profile"
+                                    ],
+                                    styles={"root": text_style}
+                                ),
+                                dmc.AccordionPanel(
+                                    [
+                                        dcc.Link(
+                                            dmc.Text(
+                                                id='user-status-header',
+                                                children=[
+                                                    DashIconify(icon="mdi:document", width=16, height=16),
+                                                    #" Metadata File"
+                                                ],
+                                                style=text_style
+                                            ),
+                                            href="/generate/metadata-file"
+                                        ),
+                                        dcc.Link(
+                                            dmc.Text(
+                                                children=[
+                                                    DashIconify(icon="mdi:document", width=16, height=16),
+                                                    " Final Report"
+                                                ],
+                                                style=text_style
+                                            ),
+                                            href="/generate/final-report"
+                                        ),
+                                    ]
+                                )
+                            ],
+                        )
                     ]
                 ),
-            ],
-            trigger="hover",
+
+                dmc.Accordion(
+                    children=[
+                        dmc.AccordionItem(
+                            value="generate-files",
+                            children=[
+                                dmc.AccordionControl(
+                                    children=[
+                                        DashIconify(icon="mdi:file", width=20, height=20),
+                                        " Generate Files"
+                                    ],
+                                    styles={"root": text_style}
+                                ),
+                                dmc.AccordionPanel(
+                                    [
+                                        dcc.Link(
+                                            dmc.Text(
+                                                children=[
+                                                    DashIconify(icon="mdi:document", width=16, height=16),
+                                                    " Metadata File"
+                                                ],
+                                                style=text_style
+                                            ),
+                                            href="/generate/metadata-file"
+                                        ),
+                                        dcc.Link(
+                                            dmc.Text(
+                                                children=[
+                                                    DashIconify(icon="mdi:document", width=16, height=16),
+                                                    " Final Report"
+                                                ],
+                                                style=text_style
+                                            ),
+                                            href="/generate/final-report"
+                                        ),
+                                    ]
+                                )
+                            ],
+                        )
+                    ]
+                ),
+            ]
         ),
-        
     ],
     align="center",
     gap="0",
-    style={'zIndex': 1030, 'fontFamily': 'Monaco, monospace', 'color': 'black'} #, 'backgroundColor': '#FEF200'
+    style={'zIndex': 1030} #, 'fontFamily': 'Monaco, monospace', 'color': 'black'
 )
 
 app.layout = dmc.MantineProvider([
@@ -135,8 +230,8 @@ app.layout = dmc.MantineProvider([
                 html.P('Prodia Bioinformatics Dashboard Application (PBDA)', style={'margin':'0', 'font-weight':'bold'})
             ], style={'display': 'inline-block', 'verticalAlign': 'middle'}),
         ], style={'display': 'flex', 'alignItems': 'center', 'flexGrow': '1'}), # This div will grow to take up available space
-        html.Div(id='navbar'), #except the Profile and Logout button
-        dmc.Group(id="user-status-header", styles={"root": {"paddingRight": 30, 'fontFamily': 'Monaco, monospace',}}),
+        html.Div(navbar, id='navbar', style={'margin-right':'20px'}), #except the Profile and Logout button
+        
     ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'marginBottom': '20px', 'backgroundColor': '#FEF200', 'fontFamily':'Montserrat, sans-serif', 'overflow':'visible'}),
     
 
@@ -172,17 +267,29 @@ def update_authentication_status(path, n):
     if current_user.is_authenticated:
         if path == '/login':
             return dmc.Group(children=[dcc.Link("Logout", href="/logout")]), '/', navbar
-        profile_menu = dmc.Menu(
-            [
-                dmc.MenuTarget(dmc.Button("Profile", variant="subtle", c="black")),
-                dmc.MenuDropdown(
-                    [
-                        dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
-                        dmc.MenuItem("Logout", href="/logout"),
-                    ]
+        xprofile_menu = dmc.Accordion(
+            children=[
+                dmc.AccordionItem(
+                    children=[
+                        dmc.AccordionControl([
+                            "Profile"
+                        ]),
+                        dmc.AccordionPanel(
+                            [
+                                dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
+                                dcc.Link(dmc.Button("Logout", variant="subtle", c="black"), href="/logout",),
+                            ]
+                        ),
+                        #dmc.Button("Profile", variant="subtle", c="black"),
+
+                    ],
+                    value='flexibility'
                 ),
-            ])
+            ],
+            value='flexibility'
+        )
         print(current_user.id)
+        profile_menu = dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
         #print(dir(current_user))
         return profile_menu, dash.no_update, navbar
     else:
@@ -198,6 +305,15 @@ def update_authentication_status(path, n):
     ### if path login and logout hide links
     if path in ['/login', '/logout']:
         return '', dash.no_update, dash.no_update
+
+@app.callback(
+    Output("drawer-simple", "opened"),
+    Input("toggle-button", "n_clicks"),
+    State("drawer-simple", "opened"),
+    prevent_initial_call=True
+)
+def toggle_drawer(n_clicks, current_drawer_opened):
+    return not current_drawer_opened
 
 
 

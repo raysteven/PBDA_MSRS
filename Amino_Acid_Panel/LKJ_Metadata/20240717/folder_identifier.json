@@ -1,8 +1,8 @@
 {
-    "User":"siapa1",
+    "User":"siapa2",
     "Date Created":"2024-07-01",
     "Time Created":"07:00",
     "Test Name":"Amino Acid Panel",
-    "Result Type":"amino_acid_panel_result",
+    "Result Type":"amino_acid_panel_metadata",
     "Download Link":"folder_to_path"
 }

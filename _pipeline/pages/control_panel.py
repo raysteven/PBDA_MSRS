@@ -19,7 +19,7 @@ import plotly.graph_objects as go
 dash.register_page(__name__, path='/control-panel',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
 require_login(__name__)
 
-pgnum = 99
+pgname = __name__
 
 def get_disk_usage():
     partitions = psutil.disk_partitions()

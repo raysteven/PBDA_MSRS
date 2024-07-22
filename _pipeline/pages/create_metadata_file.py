@@ -21,7 +21,7 @@ from utils.login_handler import require_login
 dash.register_page(__name__, path='/generate/metadata-file',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
 require_login(__name__)
 
-pgnum=1
+pgname = __name__.split('.')[-1]
 
 current_directory = os.getcwd()
 # Get the parent directory
@@ -38,7 +38,7 @@ def layout():
         children=[
                 html.Div(
                     className="div-app",
-                    id=f"div-app-{pgnum}",
+                    id=f"div-app-{pgname}",
                     children = [ #  app layout here
 
                                 html.Div([
@@ -47,7 +47,7 @@ def layout():
                                         html.P("Please input in YYYYMMDD format. (For example: 20230714)", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
                                         html.Div([
                                             dcc.Input(
-                                            id='input-runfolder',
+                                            id=f'input-runfolder-{pgname}',
                                             type='text',
                                             placeholder='Enter Runfolder Name',
                                             required=True,
@@ -76,7 +76,7 @@ def layout():
                                     html.H5('LKJ File', style={'font-weight': 'bold', 'margin':'0'}),
                                     html.P("Please input only a XLS file.", style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
                                     dcc.Upload(
-                                        id='upload-lkj-file',
+                                        id=f'upload-lkj-file-{pgname}',
                                         children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
                                         style={
                                             'width': '100%', 'height': '60px', 'lineHeight': '60px',
@@ -87,7 +87,7 @@ def layout():
                                         ),
                                     ], style={'display': 'inline-block', 'width': '45%', 'margin':'20'}),
                                     
-                                    html.Button('Generate Metadata File!', id='button-generate-metadata-file', n_clicks=0, style={
+                                    html.Button('Generate Metadata File!', id=f'button-generate-metadata-file-{pgname}', n_clicks=0, style={
                                         'margin': '50px',
                                         'padding': '10px 20px',
                                         'background-color': '#4CAF50',
@@ -102,18 +102,18 @@ def layout():
 
                                     # Interval component for polling metadata status
                                     dcc.Interval(
-                                        id='interval-metadata-file-check',
+                                        id=f'interval-metadata-file-check-{pgname}',
                                         interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
                                         n_intervals=0,
                                         disabled=True,  # Start disabled and enable after metadata generation is triggered
                                     ),
 
-                                    dcc.Store(id='metadata-file-store'),
-                                    dcc.Download(id='download-metadata-file'),
+                                    dcc.Store(id=f'metadata-file-store-{pgname}'),
+                                    dcc.Download(id=f'download-metadata-file-{pgname}'),
 
                                     html.Div([
                                         html.H5('Notification',style={'font-weight':'bold'}),
-                                        html.Div(id='notification-container-generate-metadata-file', style={"border": "0px solid black", "padding":"10px", "width":"97.5%"})
+                                        html.Div(id=f'notification-container-generate-metadata-file-{pgname}', style={"border": "0px solid black", "padding":"10px", "width":"97.5%"})
                                     ], style={'fontFamily':'Montserrat, sans-serif'})
 
 
@@ -133,9 +133,9 @@ def layout():
     #def update_output(n_clicks):
     #    return f"Button has been clicked {n_clicks} times." if n_clicks else "Button not clicked yet."
 @callback(
-    Output('upload-lkj-file', 'children'),
-    [Input('upload-lkj-file', 'filename')],
-    [State('upload-lkj-file', 'contents')],
+    Output(f'upload-lkj-file-{pgname}', 'children'),
+    [Input(f'upload-lkj-file-{pgname}', 'filename')],
+    [State(f'upload-lkj-file-{pgname}', 'contents')],
     allow_duplicate=True
 )
 def update_lkj_file(lkj_filename, lkj_contents):
@@ -162,21 +162,21 @@ def generate_metadata_async(runfolder, lkj_file_path, runfolder_dir):
     return metadata_path
 
 @callback(
-    [Output('notification-container-generate-metadata-file', 'children'),
-    Output('interval-metadata-file-check', 'disabled'),
-    Output('metadata-file-store', 'data'),
-    Output('download-metadata-file', 'data')],  # Add this line for dcc.Download
-    [Input('button-generate-metadata-file', 'n_clicks'),
-    Input('interval-metadata-file-check', 'n_intervals')],
-    [State('upload-lkj-file', 'filename'),
-    State('input-runfolder', 'value'),
-    State('metadata-file-store', 'data'),
+    [Output(f'notification-container-generate-metadata-file-{pgname}', 'children'),
+    Output(f'interval-metadata-file-check-{pgname}', 'disabled'),
+    Output(f'metadata-file-store-{pgname}', 'data'),
+    Output(f'download-metadata-file-{pgname}', 'data')],  # Add this line for dcc.Download
+    [Input(f'button-generate-metadata-file-{pgname}', 'n_clicks'),
+    Input(f'interval-metadata-file-check-{pgname}', 'n_intervals')],
+    [State(f'upload-lkj-file-{pgname}', 'filename'),
+    State(f'input-runfolder-{pgname}', 'value'),
+    State(f'metadata-file-store-{pgname}', 'data'),
     ],
 )
 def unified_callback(n_clicks, n_intervals, lkj_file_filename, runfolder, metadata_data):
     triggered_id = callback_context.triggered[0]['prop_id'].split('.')[0]
     
-    if triggered_id == 'button-generate-metadata-file':
+    if triggered_id == f'button-generate-metadata-file-{pgname}':
         if n_clicks > 0:
             missing_components = []
             if not runfolder:
@@ -231,7 +231,7 @@ def unified_callback(n_clicks, n_intervals, lkj_file_filename, runfolder, metada
         else:
             return 'All file has been uploaded. Generating metadata file. Do not refresh the webpage!', True, None, None
 
-    elif triggered_id == 'interval-metadata-file-check':
+    elif triggered_id == f'interval-metadata-file-check-{pgname}':
         metadata_path = metadata_data
         if n_intervals > 0 and metadata_path:
             # Assuming metadata_data is a direct link to the downloadable file
