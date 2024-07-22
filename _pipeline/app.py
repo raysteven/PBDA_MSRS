@@ -95,12 +95,26 @@ app.title = 'PBDA: Mass Spectrometry Reporting System (MSRS)'
 # Common text style for consistency
 text_style = {'fontFamily': 'Monaco, monospace', 'color': 'black'}
 
-navbar = dmc.Group(
+
+
+
+def create_layout(app):
+    navbar = dmc.Group(
     children=[
+        dcc.Link(
+                dmc.Button(
+                        children=[
+                            DashIconify(icon="mdi:home", width=30, height=30),
+                        ],
+                        styles={"root": text_style},
+                        variant="subtle"
+                    ),
+                    href="/"
+                ),
         dmc.Button(
             id="toggle-button",
             children=[
-                DashIconify(icon="mdi:menu", width=35, height=35)
+                DashIconify(icon="mdi:menu", width=30, height=30)
             ],
             variant="subtle",
             color="black"
@@ -112,54 +126,44 @@ navbar = dmc.Group(
             zIndex=10000,
             position='right',
             children=[
-
-                html.Div(id="user-status-header-x"),
-                dcc.Link(
-                    dmc.Button(
-                        children=[
-                            DashIconify(icon="mdi:home", width=20, height=20),
-                            #dmc.Group(id="user-status-header", styles={"root": {"paddingRight": 30, 'fontFamily': 'Monaco, monospace',}}),
-                            #" Home"
-                        ],
-                        styles={"root": text_style},
-                        variant="subtle"
-                    ),
-                    href="/"
-                ),
                 dmc.Accordion(
                     children=[
                         dmc.AccordionItem(
                             value="generate-files",
                             children=[
                                 dmc.AccordionControl(
-                                    children=[
-                                        DashIconify(icon="tabler:user", width=20, height=20),
-                                        " Profile"
-                                    ],
+                                    id='user-status-header',
                                     styles={"root": text_style}
                                 ),
                                 dmc.AccordionPanel(
                                     [
                                         dcc.Link(
-                                            dmc.Text(
-                                                id='user-status-header',
+                                            dmc.Button(
                                                 children=[
-                                                    DashIconify(icon="mdi:document", width=16, height=16),
-                                                    #" Metadata File"
+                                                    dmc.Group([
+                                                    DashIconify(icon="tabler:settings", width=20, height=20),
+                                                    #dmc.Space(h=10),
+                                                    dmc.Text("Control Panel")
+                                                    ])
                                                 ],
-                                                style=text_style
+                                                styles={"root": text_style},
+                                                variant="subtle"
                                             ),
-                                            href="/generate/metadata-file"
+                                            href="/control-panel"
                                         ),
                                         dcc.Link(
-                                            dmc.Text(
+                                            dmc.Button(
                                                 children=[
-                                                    DashIconify(icon="mdi:document", width=16, height=16),
-                                                    " Final Report"
+                                                    dmc.Group([
+                                                    DashIconify(icon="tabler:logout", width=20, height=20),
+                                                    #dmc.Space(h=10),
+                                                    dmc.Text("Logout")
+                                                    ])
                                                 ],
-                                                style=text_style
+                                                styles={"root": text_style},
+                                                variant="subtle"
                                             ),
-                                            href="/generate/final-report"
+                                            href="/logout"
                                         ),
                                     ]
                                 )
@@ -175,33 +179,41 @@ navbar = dmc.Group(
                             children=[
                                 dmc.AccordionControl(
                                     children=[
-                                        DashIconify(icon="mdi:file", width=20, height=20),
-                                        " Generate Files"
+                                        DashIconify(icon="tabler:cell", width=20, height=20),
+                                        " Amino Acid Panel"
                                     ],
                                     styles={"root": text_style}
                                 ),
                                 dmc.AccordionPanel(
                                     [
                                         dcc.Link(
-                                            dmc.Text(
+                                            dmc.Button(
                                                 children=[
-                                                    DashIconify(icon="mdi:document", width=16, height=16),
-                                                    " Metadata File"
+                                                    dmc.Group([
+                                                    DashIconify(icon="tabler:user-scan", width=20, height=20),
+                                                    #dmc.Space(h=10),
+                                                    dmc.Text("Metadata")
+                                                    ])
                                                 ],
-                                                style=text_style
+                                                styles={"root": text_style},
+                                                variant="subtle"
                                             ),
                                             href="/generate/metadata-file"
                                         ),
                                         dcc.Link(
-                                            dmc.Text(
+                                            dmc.Button(
                                                 children=[
-                                                    DashIconify(icon="mdi:document", width=16, height=16),
-                                                    " Final Report"
+                                                    dmc.Group([
+                                                    DashIconify(icon="tabler:clipboard-text", width=20, height=20),
+                                                    #dmc.Space(h=10),
+                                                    dmc.Text("Final Report")
+                                                    ])
                                                 ],
-                                                style=text_style
+                                                styles={"root": text_style},
+                                                variant="subtle"
                                             ),
                                             href="/generate/final-report"
-                                        ),
+                                        ),                                              
                                     ]
                                 )
                             ],
@@ -214,44 +226,62 @@ navbar = dmc.Group(
     align="center",
     gap="0",
     style={'zIndex': 1030} #, 'fontFamily': 'Monaco, monospace', 'color': 'black'
-)
+    )
 
-app.layout = dmc.MantineProvider([
-    html.Div([
-    dcc.Location(id='url', refresh=False),
+    return dmc.MantineProvider(
+        [
+            html.Div(
+                [
+                    dcc.Location(id='url', refresh=False),
+                    
+                    # Header
+                    html.Div(
+                        [
+                            # New div wrapping the image and text, with flex-grow style
+                            html.Div(
+                                [
+                                    html.Img(src='/assets/prodia-sulur.png', style={'height': '75px', 'marginRight': '15px'}),
+                                    html.Div(
+                                        [
+                                            html.H4(
+                                                'Mass Spectrometry Reporting System (MSRS)', 
+                                                style={'display': 'inline-block', 'verticalAlign': 'middle', 'margin':'0', 'font-weight':'bold'}
+                                            ),
+                                            html.P(
+                                                'Prodia Bioinformatics Dashboard Application (PBDA)', 
+                                                style={'margin':'0', 'font-weight':'bold'}
+                                            )
+                                        ], 
+                                        style={'display': 'inline-block', 'verticalAlign': 'middle'}
+                                    ),
+                                ], 
+                                style={'display': 'flex', 'alignItems': 'center', 'flexGrow': '1'}
+                            ), # This div will grow to take up available space
+                            html.Div(navbar, id='navbar', style={'margin-right':'20px'}), #except the Profile and Logout button
+                            
+                        ], 
+                        style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'marginBottom': '20px', 'backgroundColor': '#FEF200', 'fontFamily':'Montserrat, sans-serif', 'overflow':'visible'}
+                    ),
+                    
+                    # Page Content
+                    dcc.Loading(
+                        id='loading-page-container',
+                        type='default',
+                        children=dash.page_container,
+                    ),
+                    html.Div(id='page-content'),
+                ]
+            )
+        ]
+    )
 
-    # Header
-    html.Div([
-        # New div wrapping the image and text, with flex-grow style
-        html.Div([
-            html.Img(src='/assets/prodia-sulur.png', style={'height': '75px', 'marginRight': '15px'}),
-            html.Div([
-                html.H4('Mass Spectrometry Reporting System (MSRS)', style={'display': 'inline-block', 'verticalAlign': 'middle', 'margin':'0', 'font-weight':'bold'}),
-                html.P('Prodia Bioinformatics Dashboard Application (PBDA)', style={'margin':'0', 'font-weight':'bold'})
-            ], style={'display': 'inline-block', 'verticalAlign': 'middle'}),
-        ], style={'display': 'flex', 'alignItems': 'center', 'flexGrow': '1'}), # This div will grow to take up available space
-        html.Div(navbar, id='navbar', style={'margin-right':'20px'}), #except the Profile and Logout button
-        
-    ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'marginBottom': '20px', 'backgroundColor': '#FEF200', 'fontFamily':'Montserrat, sans-serif', 'overflow':'visible'}),
-    
-
-    #Page Content
-    # Page Content
-    dcc.Loading(
-        id='loading-page-container',
-        type='default',
-        children=dash.page_container,
-    ),
-    html.Div(id='page-content'),
-])
-])
-
+app.layout = create_layout(app)
 
 
 @app.callback(
     Output("user-status-header", "children"),
     Output('url','pathname'),
-    Output("navbar","children"),
+    #Output("navbar","children"),
     Input("url", "pathname"),
     Input({'index': ALL, 'type':'redirect'}, 'n_intervals')
 )
@@ -259,14 +289,14 @@ def update_authentication_status(path, n):
     ### logout redirect
     if n:
         if not n[0]:
-            return '', dash.no_update, navbar
+            return '', dash.no_update, #navbar
         else:
-            return '', '/login', navbar
+            return '', '/login',# navbar
 
     ### test if user is logged in
     if current_user.is_authenticated:
         if path == '/login':
-            return dmc.Group(children=[dcc.Link("Logout", href="/logout")]), '/', navbar
+            return dmc.Group(children=[dcc.Link("Logout", href="/logout")]), '/', #navbar
         xprofile_menu = dmc.Accordion(
             children=[
                 dmc.AccordionItem(
@@ -289,22 +319,23 @@ def update_authentication_status(path, n):
             value='flexibility'
         )
         print(current_user.id)
-        profile_menu = dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
+        profile_menu = [DashIconify(icon="tabler:user", width=20, height=20), f" Hi, {current_user.id}!"]
+        #dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
         #print(dir(current_user))
-        return profile_menu, dash.no_update, navbar
+        return profile_menu, dash.no_update, #navbar
     else:
         ### if page is restricted, redirect to login and save path
         if path in restricted_page:
             session['url'] = path
-            return dcc.Link("Login", href="/login"), '/login', dash.no_update
+            return dcc.Link("Login", href="/login"), '/login', #dash.no_update
 
     ### if path not login and logout display login link
     if current_user and path not in ['/login', '/logout']:
-        return dcc.Link("Login", href="/login"), dash.no_update, navbar
+        return dcc.Link("Login", href="/login"), dash.no_update, #navbar
 
     ### if path login and logout hide links
     if path in ['/login', '/logout']:
-        return '', dash.no_update, dash.no_update
+        return '', dash.no_update, #dash.no_update
 
 @app.callback(
     Output("drawer-simple", "opened"),

@@ -172,14 +172,10 @@ def layout():
                         html.Div([
                             dmc.Title(f"History Table", order=3),
                             dmc.Space(h=20),
-                            main_table
+                            main_table,
+                            dmc.Space(h=300),
                         ], style={'margin':'20px'}),
-                        html.Div([
-                            html.H5('Home Page', style={'margin-top':'20px'}),
-                            html.Div([
-                            html.P(['Welcome to the home page of this PBDA!', html.Br() ,'You can use the available tools from the navigation bar on the top right of the page.']),
-                            ])
-                        ], style={'margin-left':'20px', 'fontFamily':'Monaco, monospace'}),
+
 
                         html.Div([
                             html.H5('Example Input and Output Files'),
