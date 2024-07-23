@@ -10,7 +10,7 @@ import shutil  # For file copying
 import time
 import threading
 import argparse
-
+import json
 
 
 from PBTK import *
@@ -51,7 +51,7 @@ def login_button_click():
 
 # Keep this out of source code repository - save in a file or a database
 #  passwords should be encrypted
-VALID_USERNAME_PASSWORD = {"admin": "admin", "Ray": "password"}
+VALID_USERNAME_PASSWORD = {"admin": "admin", "Ray": "password", "User1":"password", "User2":"password", "User3":"password"}
 
 
 # Updating the Flask Server configuration with Secret Key to encrypt the user session cookie
@@ -149,7 +149,7 @@ def create_layout(app):
                                                 styles={"root": text_style},
                                                 variant="subtle"
                                             ),
-                                            href="/control-panel"
+                                            href="/control_panel"
                                         ),
                                         dcc.Link(
                                             dmc.Button(
@@ -181,6 +181,54 @@ def create_layout(app):
                                     children=[
                                         DashIconify(icon="tabler:cell", width=20, height=20),
                                         " Amino Acid Panel"
+                                    ],
+                                    styles={"root": text_style}
+                                ),
+                                dmc.AccordionPanel(
+                                    [
+                                        dcc.Link(
+                                            dmc.Button(
+                                                children=[
+                                                    dmc.Group([
+                                                    DashIconify(icon="tabler:user-scan", width=20, height=20),
+                                                    #dmc.Space(h=10),
+                                                    dmc.Text("Metadata")
+                                                    ])
+                                                ],
+                                                styles={"root": text_style},
+                                                variant="subtle"
+                                            ),
+                                            href="/amino_acid_panel/create_metadata_file"
+                                        ),
+                                        dcc.Link(
+                                            dmc.Button(
+                                                children=[
+                                                    dmc.Group([
+                                                    DashIconify(icon="tabler:clipboard-text", width=20, height=20),
+                                                    #dmc.Space(h=10),
+                                                    dmc.Text("Final Report")
+                                                    ])
+                                                ],
+                                                styles={"root": text_style},
+                                                variant="subtle"
+                                            ),
+                                            href="/amino_acid_panel/create_final_report"
+                                        ),                                              
+                                    ]
+                                )
+                            ],
+                        )
+                    ]
+                ),
+                dmc.Accordion(
+                    children=[
+                        dmc.AccordionItem(
+                            value="generate-files",
+                            children=[
+                                dmc.AccordionControl(
+                                    children=[
+                                        DashIconify(icon="tabler:chart-histogram", width=20, height=20),
+                                        " Cortisol"
                                     ],
                                     styles={"root": text_style}
                                 ),
@@ -318,10 +366,9 @@ def update_authentication_status(path, n):
             ],
             value='flexibility'
         )
-        print(current_user.id)
+
         profile_menu = [DashIconify(icon="tabler:user", width=20, height=20), f" Hi, {current_user.id}!"]
-        #dmc.Text(f"Hi, {current_user.id}!", ta="center", size="sm", fw=550),
-        #print(dir(current_user))
+
         return profile_menu, dash.no_update, #navbar
     else:
         ### if page is restricted, redirect to login and save path
@@ -357,6 +404,14 @@ if __name__ == "__main__":
                         help='Port to use')
 
     args = parser.parse_args()
+
+    config = {
+        'host': args.host,
+        'port': args.port
+    }
+
+    with open('config.json', 'w') as config_file:
+        json.dump(config, config_file)
 
     if args.host and args.port:
         app.run_server(host=args.host, port=args.port, debug=True)

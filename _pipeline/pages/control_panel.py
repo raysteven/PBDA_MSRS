@@ -15,11 +15,11 @@ from utils.login_handler import require_login
 import psutil
 import plotly.graph_objects as go
 
+pgname = __name__.split('.')[-1]
+pgaddress = f"/{pgname}"
 
-dash.register_page(__name__, path='/control-panel',name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
+dash.register_page(__name__, path=pgaddress,name='PBDA: MSRS Reporting System',title='PBDA: MSRS Reporting System')
 require_login(__name__)
-
-pgname = __name__
 
 def get_disk_usage():
     partitions = psutil.disk_partitions()
@@ -76,8 +76,9 @@ class FileTree:
     def build_tree(self, path, isRoot=False):
         d = []
         if os.path.isdir(path):
+            entries = sorted(os.listdir(path))
             children = self.flatten([self.build_tree(os.path.join(path, x))
-                                     for x in os.listdir(path)])
+                                     for x in entries])
             if isRoot:
                 d.append(
                     dmc.AccordionItem([
@@ -112,7 +113,7 @@ def layout():
                     dmc.GridCol(dmc.Title(f"Storage Disk Viewer (GB)", order=3), span=4)
                 ],styles={"root": {"justify": "center", 'fontFamily': 'Monaco, monospace','grow':True,'gap':'xl','textAlign': "left",'topMargin':'10px','padding-left':'30px'}}),
                 dmc.Grid([
-                    dmc.GridCol(html.Div(id="file_tree_container", children=[FileTree("..", "file_tree").render()]), span=7),
+                    dmc.GridCol(html.Div(id="file_tree_container", children=[FileTree("../_pipeline/assets/_results", "file_tree").render()]), span=7),
                     dmc.GridCol(dcc.Graph(figure=fig), span=4)
                 ],styles={"root": {"justify": "center", 'fontFamily': 'Monaco, monospace','grow':True,'gap':'xl','textAlign': "left",'padding-left':'30px'}})
 

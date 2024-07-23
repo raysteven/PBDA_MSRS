@@ -4,14 +4,14 @@ workdir = os.getcwd()
 from PBTK import *
 from json_create import json_create
 from json_to_pdf import json_to_pdf
-
-import zipfile
+from utils.utils import zip_folder
 
 import pandas as pd
 from copy import deepcopy
 
 db_path = os.path.join(workdir,'database_aap_v1.1.0.csv')
-print("=====> DB PATH:",db_path)
+#print("=====> DB PATH:",db_path)
+
 
 def result_csv_create(wokdir_parent_directory, runfolder, report_df):
     report_df = deepcopy(report_df)
@@ -24,14 +24,6 @@ def result_csv_create(wokdir_parent_directory, runfolder, report_df):
 
 def get_parent_directory(path):
     return os.path.abspath(os.path.join(path, os.pardir))
-
-
-def zip_folder(folder_path, zip_path):
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(folder_path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                zipf.write(file_path, os.path.relpath(file_path, folder_path))
 
 def auto_aap(runfolder,sample_sheet_path, result_sheet_path):
     aap_db = loadDF(file_path=db_path, file_type='csv')

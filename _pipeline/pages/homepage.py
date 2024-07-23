@@ -26,15 +26,15 @@ current_directory = os.getcwd()
 # Get the parent directory
 parent_directory = os.path.dirname(current_directory)
 
-
+result_dir = os.path.join(current_directory, 'assets','_results')
 
 def create_dataframe_from_json(directories=None):
     
     if directories is None:
-        directories = [os.path.join(parent_directory, 'Amino_Acid_Panel', 'Final_Report'),
-                       os.path.join(parent_directory, 'Amino_Acid_Panel', 'LKJ_Metadata'),
-                       os.path.join(parent_directory, 'Cortisol', 'Final_Report'),
-                       os.path.join(parent_directory, 'Cortisol', 'LKJ_Metadata'),
+        directories = [os.path.join(result_dir, 'Amino_Acid_Panel', 'Final_Report'),
+                       os.path.join(result_dir, 'Amino_Acid_Panel', 'LKJ_Metadata'),
+                       os.path.join(result_dir, 'Cortisol', 'Final_Report'),
+                       os.path.join(result_dir, 'Cortisol', 'LKJ_Metadata'),
                        ]
     
     # Initialize a list to store data from all JSON files
@@ -49,7 +49,7 @@ def create_dataframe_from_json(directories=None):
         files_with_mtime = [(file, os.path.getmtime(file)) for file in json_files]
         
         # Sort files by modification time (oldest first)
-        files_with_mtime.sort(key=lambda x: x[1])
+        files_with_mtime.sort(key=lambda x: x[1], reverse=True)
         
         # Read JSON files and extract data
         for i, (file, _) in enumerate(files_with_mtime):
@@ -122,6 +122,8 @@ def get_main_table(df):
         "filter": "agDateColumnFilter",
         "checkboxSelection": True,
         "headerCheckboxSelection": True,
+        "sort": "desc"  # Default sort direction to descending (newest to oldest)
+
         },
         ] + [{"field": i} for i in ["Time Created","User","Test Name","Result Type"]] + [
             {
