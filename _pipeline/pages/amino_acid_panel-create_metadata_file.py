@@ -8,11 +8,10 @@ from dash.exceptions import PreventUpdate
 
 import base64
 import os
-import shutil  # For file copying
+import shutil
 import time
 import threading
 import json
-
 
 from PBTK import *
 from lkj_to_metadata import lkj_to_metadata
@@ -23,11 +22,6 @@ from utils.login_handler import require_login
 import json
 from utils.utils import zip_folder
 
-# Open and read the JSON file
-
-
-#global server_port
-#print(server_port)
 
 pgname = __name__.split('.')[-1]
 pgaddress = f"/{pgname.split('-')[0]}/{pgname.split('-')[1]}"
@@ -41,7 +35,6 @@ print(current_directory)
 parent_directory = os.path.dirname(current_directory)
 input_temp_dir = os.path.join(os.getcwd(),'input_temp')
 
-#print(current_user.id)
 
 def layout():
     if not current_user.is_authenticated:
@@ -141,12 +134,7 @@ def layout():
         )
     return layout
 
-    #@dash_app.callback(
-    #    Output('page-1-content', 'children'),
-    #    Input('page-1-button', 'n_clicks')
-    #)
-    #def update_output(n_clicks):
-    #    return f"Button has been clicked {n_clicks} times." if n_clicks else "Button not clicked yet."
+
 @callback(
     Output(f'upload-lkj-file-{pgname}', 'children'),
     [Input(f'upload-lkj-file-{pgname}', 'filename')],
@@ -180,7 +168,11 @@ def generate_metadata_async(runfolder, lkj_file_path, runfolder_dir):
     [Output(f'notification-container-generate-metadata-file-{pgname}', 'children'),
     Output(f'interval-metadata-file-check-{pgname}', 'disabled'),
     Output(f'metadata-file-store-{pgname}', 'data'),
-    Output(f'download-metadata-file-{pgname}', 'data')],  # Add this line for dcc.Download
+    Output(f'download-metadata-file-{pgname}', 'data'), # Add this line for dcc.Download
+    Output(f'upload-lkj-file-{pgname}', 'disabled'),
+    Output(f'input-runfolder-{pgname}', 'disabled'),
+    Output(f'metadata-file-store-{pgname}', 'disabled'),
+    ],  
     [Input(f'button-generate-metadata-file-{pgname}', 'n_clicks'),
     Input(f'interval-metadata-file-check-{pgname}', 'n_intervals')],
     [State(f'upload-lkj-file-{pgname}', 'filename'),
@@ -204,7 +196,9 @@ def unified_callback(n_clicks, n_intervals, lkj_file_filename, runfolder, metada
                 return (f'Missing component(s): {", ".join(missing_components)}. Please complete all required fields to generate the metadata.', 
                         dash.no_update,  # This output does not change
                         dash.no_update,
-                        dash.no_update)
+                        dash.no_update,
+                        dash.no_update,dash.no_update,dash.no_update
+                        )
             
             ###>>>>>>>>>>>>>>>>>>>>>>>>> FILE MOVING
             print(runfolder)
@@ -275,6 +269,7 @@ def unified_callback(n_clicks, n_intervals, lkj_file_filename, runfolder, metada
             folder_identifier['Time Created'] = current_time
             folder_identifier['Test Name'] = "Amino Acid Panel"
             folder_identifier['Result Type'] = "Metadata"
+            folder_identifier['Runfolder Name'] = runfolder
             folder_identifier['Download Link'] = f"[{folder_identifier['Test Name']} - {folder_identifier['Result Type']} - {runfolder}](http://{host}:{port}/{metadata_download})"
 
             with open(os.path.join(metadata_runfolder_path,'folder_identifier.json'), 'w') as json_file:
@@ -282,18 +277,19 @@ def unified_callback(n_clicks, n_intervals, lkj_file_filename, runfolder, metada
 
             zip_folder(metadata_runfolder_path, zip_target_path)
 
-            return 'Metadata generation finished. Please wait for the file to be downloaded. Do not refresh the webpage!', False, metadata_path, dash.no_update
+            return 'Metadata generation finished. Please wait for the file to be downloaded. Do not refresh the webpage!', False, metadata_path, dash.no_update, True, True, True
         else:
-            return 'All file has been uploaded. Generating metadata file. Do not refresh the webpage!', True, None, None
+            return 'All file has been uploaded. Generating metadata file. Do not refresh the webpage!', True, None, None, dash.no_update,dash.no_update,dash.no_update
 
     elif triggered_id == f'interval-metadata-file-check-{pgname}':
         metadata_path = metadata_data
         if n_intervals > 0 and metadata_path:
             # Assuming metadata_data is a direct link to the downloadable file
-            return ['File has been downloaded', True, metadata_data, dcc.send_file(metadata_data)]
+            return ['File has been downloaded', True, metadata_data, dcc.send_file(metadata_data), True, True, True]
         else:
-            return 'metadata generation in progress...', True, metadata_data, dash.no_update  # Keep the download data unchanged if not ready
+            return 'metadata generation in progress...', True, metadata_data, dash.no_update, dash.no_update,dash.no_update,dash.no_update  # Keep the download data unchanged if not ready
         
     # Default return statement to avoid Dash callback exceptions
-    return 'Please upload the necessary files and enter the Runfolder name to generate the metadata file', True, None, None
+    return 'Please upload the necessary files and enter the Runfolder name to generate the metadata file', True, None, None, dash.no_update,dash.no_update,dash.no_update
+
 

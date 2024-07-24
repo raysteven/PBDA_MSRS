@@ -122,17 +122,19 @@ def get_main_table(df):
         "filter": "agDateColumnFilter",
         "checkboxSelection": True,
         "headerCheckboxSelection": True,
-        "sort": "desc"  # Default sort direction to descending (newest to oldest)
-
+        "sort": "desc",  # Default sort direction to descending (newest to oldest)
+        "width": 50, "maxWidth": 200
         },
-        ] + [{"field": i} for i in ["Time Created","User","Test Name","Result Type"]] + [
-            {
-                "field":"Download Link","cellRenderer": "markdown"
-            }]
+        {"field":"Time Created","width": 50, "maxWidth": 200, "sort": "desc"},
+        {"field":"User","width": 50, "maxWidth": 130},
+        ] + [{"field": i,"width": 50, "maxWidth": 200} for i in ["Test Name","Result Type"]] + [
+            {"field":"Runfolder Name","width": 50, "maxWidth": 300},
+            {"field":"Download Link","cellRenderer": "markdown"},
+            ]
     
     defaultColDef = {
         "flex": 1,
-        "minWidth": 50,
+        #"minWidth": 10,
         #"filter": "agTextColumnFilter",
         "filter": True, 
         "sortable": True, "floatingFilter": True,

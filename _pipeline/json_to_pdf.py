@@ -87,13 +87,8 @@ def json_to_pdf(report_df, runfolder, workdir):
 
         ##### Create out_folder
         out_folder = os.path.join(runfolder, patient_id)
-        
-        def get_parent_directory(path):
-            return os.path.abspath(os.path.join(path, os.pardir))
 
-        workdir_parent = get_parent_directory(workdir)
-
-        outdir_path = os.path.join(workdir_parent, out_folder)
+        outdir_path = os.path.join(workdir, out_folder)
         # Check if the folder already exists
         if not os.path.exists(outdir_path):
             # Create the folder
@@ -503,7 +498,7 @@ def json_to_pdf(report_df, runfolder, workdir):
         story.append(Spacer(1, 100))
         story.append(Paragraph("<b>Authorized By</b>", center_paragraph))
         story.append(Spacer(1, 12))
-        auth_sign_image = os.path.join(workdir, 'ttd_lab_head_ms.png')
+        auth_sign_image = os.path.join(os.getcwd(), 'ttd_lab_head_ms.png')
         story.append(Spacer(1, 12))
         story.append(Image(auth_sign_image, width=94.8, height=29.4))
         story.append(Spacer(1, 20))

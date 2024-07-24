@@ -12,12 +12,16 @@ from datetime import datetime
 import dash_mantine_components as dmc
 
 import pandas as pd
+from datetime import datetime
+import json
+
 
 from PBTK import *
 from auto_aap import auto_aap
 
 from flask_login import current_user
 from utils.login_handler import require_login
+
 
 pgname = __name__.split('.')[-1]
 pgaddress = f"/{pgname.split('-')[0]}/{pgname.split('-')[1]}"
@@ -26,6 +30,9 @@ dash.register_page(__name__, path=pgaddress,name='PBDA: MSRS Reporting System',t
 require_login(__name__)
 
 current_directory = os.getcwd()
+
+aap_dir = os.path.join(os.getcwd(), 'assets','_results','Amino_Acid_Panel','Final_Report')
+
 # Get the parent directory
 parent_directory = os.path.dirname(current_directory)
 input_temp_dir = os.path.join(os.getcwd(),'input_temp')
@@ -37,11 +44,72 @@ input_temp_dir = os.path.join(os.getcwd(),'input_temp')
 
 ########################################################################################################################################################################################################
 
-def generate_report_async(runfolder, metadata_file_path, result_sheet_path):
+def generate_report_async(runfolder, metadata_file_path, result_sheet_path, user):
+
+    print("Start Generate Report Async!")
+
+    print("Defining Report Filename!")
+    report_file_name = f"{runfolder.replace(' ','_')}.zip"
+
+    print("Defining Report Path!")
+    report_path = os.path.join(aap_dir,report_file_name)
+
+    print("Defining Now!")
+    # Get the current date and time
+    now = datetime.now()
+    
+    print("Defining Current Date!")
+    # Format the date as YYYY-MM-DD
+    current_date = now.strftime('%Y-%m-%d')
+    print("Defining Current Date!")
+    # Format the time as HH:MM
+    current_time = now.strftime('%H:%M')
+
+
+    print("Opening config.json!")
+    with open('config.json', 'r') as file:
+        print("Defining config!")
+        config = json.load(file)
+        print("Defining host!")
+        host = config['host']
+        print("Defining port!")
+        port = config['port']
+
+    print("Defining aap_final_report_download_path!")
+    aap_final_report_download_path = os.path.join(os.path.relpath(aap_dir, os.getcwd()),report_file_name)
+
+
+    print("Defining folder_identifier")
+    folder_identifier = {}
+    
+    print("Defining folder_identifier User")
+    folder_identifier['User'] = user
+    print("Defining folder_identifier Date Created")
+    folder_identifier['Date Created'] = current_date
+    print("Defining folder_identifier Time Created")
+    folder_identifier['Time Created'] = current_time
+    print("Defining folder_identifier Test Name")
+    folder_identifier['Test Name'] = "Amino Acid Panel"
+    print("Defining folder_identifier Result Type")
+    folder_identifier['Result Type'] = "Final Report"
+    print("Defining folder_identifier Runfolder Name")
+    folder_identifier['Runfolder Name'] = runfolder
+    print("Defining folder_identifier Download Link")
+    folder_identifier['Download Link'] = f"[{folder_identifier['Test Name']} - {folder_identifier['Result Type']} - {runfolder}](http://{host}:{port}/{aap_final_report_download_path})"
+
+    print("Sleep!!!!!!")
+
+
+    print("Write folder_identifier.json")
+    with open(os.path.join(aap_dir, runfolder, 'folder_identifier.json'), 'w') as json_file:
+        json.dump(folder_identifier, json_file, indent=4)
+    
+    print("Running auto_aap!!")
     auto_aap(runfolder, metadata_file_path, result_sheet_path)
+
     print("Report Generation Done!")
     # Assuming report_data is a direct link to the downloadable file
-    report_path = os.path.join(os.path.dirname(os.getcwd()),'_zips',f'{runfolder}.zip')
+    
     print("Report Download Link:", report_path)
     return report_path
 
@@ -61,7 +129,6 @@ def layout():
     if not current_user.is_authenticated:
         return html.Div(["Please ", dcc.Link("login", href="/login"), " to continue"])
 
-    
     layout = html.Div([
         #*create_multiplexer('interval-report-check', 'disabled', 2),
         dmc.Title("Amino Acid Panel - Create Final Report",order=2),
@@ -115,7 +182,7 @@ def layout():
             ], style={'display': 'inline-block', 'width': '45%', 'margin':'20'}),
 
             html.Div([
-                html.H5('Result Sheet', style={'font-weight': 'bold', 'margin':'0'}),
+                html.H5('Raw Result', style={'font-weight': 'bold', 'margin':'0'}),
                 html.P('Please input only a XLSX file that must contain a sheet named "Sheet1".', style={'margin':'0', 'fontFamily':'Montserrat, sans-serif'}),
                 dcc.Upload(
                     id='upload-result-sheet',
@@ -188,7 +255,7 @@ def layout():
 )
 def update_result_sheet(result_filename, result_contents):
     if result_filename is not None:
-        print(result_filename)
+        #print(result_filename)
         extension = '.xlsx'
         if extension not in result_filename:
             return html.Div(['Please input XLSX file only!'], style={'backgroundColor': 'red', 'color': 'white'})
@@ -225,7 +292,7 @@ def update_metadata_file(metadata_filename, metadata_contents):
         extension = '.csv'
         if extension not in metadata_filename:
             return html.Div(['Please input CSV file only!'], style={'backgroundColor': 'red', 'color': 'white'})
-        print(metadata_filename)
+        #print(metadata_filename)
         metadata_file_path = os.path.join(input_temp_dir, metadata_filename)
         with open(metadata_file_path, 'wb') as f:
             f.write(base64.b64decode(metadata_contents.split(",")[1]))
@@ -248,7 +315,10 @@ def update_metadata_file(metadata_filename, metadata_contents):
      State('input-runfolder', 'value')],
 )
 def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_filename, runfolder):
-    if n_clicks > 0:
+    if n_clicks > 0: #  and
+        if current_user.is_authenticated:
+            current_user_id = current_user.id
+
         missing_components = []
         if not runfolder:
             missing_components.append('Runfolder')
@@ -265,7 +335,7 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
         ###>>>>>>>>>>>>>>>>>>>>>>>>> FILE MOVING
 
         print('Executing runfolder:',runfolder)
-        runfolder_dir = os.path.join(parent_directory, runfolder)
+        runfolder_dir = os.path.join(aap_dir, runfolder)
         # Check if the directory exists
         if os.path.exists(runfolder_dir):
             # Delete the directory
@@ -320,15 +390,15 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
         ###<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FILE MOVING
 
         # Delete existing ZIP file if it exists
-        report_path = os.path.join(os.path.dirname(os.getcwd()), '_zips', f'{runfolder}.zip')
+        report_path = os.path.join(aap_dir,f"{runfolder.replace(' ','_')}.zip")
         if os.path.exists(report_path):
             os.remove(report_path)
 
-        runfolder_dir = os.path.join(parent_directory, runfolder)
         metadata_file_path = os.path.join(runfolder_dir, metadata_file_filename)
         result_sheet_path = os.path.join(runfolder_dir, result_sheet_filename)
 
-        threading.Thread(target=generate_report_async, args=(runfolder, metadata_file_path, result_sheet_path)).start()
+        print("Start Threading!")
+        threading.Thread(target=generate_report_async, args=(runfolder, metadata_file_path, result_sheet_path, current_user_id)).start()
 
         return f'{log_current_time()} All file has been uploaded. Generating the final report. Do not refresh the webpage!', False, True, True, True, True
     else:
@@ -348,13 +418,20 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
 )
 def download_report(n_intervals, metadata_file_filename, result_sheet_filename, runfolder):
     if n_intervals > 0:
-        report_path = os.path.join(os.path.dirname(os.getcwd()), '_zips', f'{runfolder}.zip')
+        report_path = os.path.join(aap_dir,f"{runfolder.replace(' ','_')}.zip")
+
+        print('Download Report Interval Checking')
+
+        time.sleep(20)
 
         if os.path.exists(report_path):
+            print('Report Done!')
             return [f'{log_current_time()} Report generation is finished. The report has been downloaded; please check the Download directory. ', html.Br(), html.Br() ,html.B('You can refresh the page if you want to enter a new query.')], True, dcc.send_file(report_path)
         else:
+            print('Report In Progress!!')
             return f'{log_current_time()} Report is still being generated. Please wait...', False, dash.no_update
     else:
+        print('AHAAAAAAAAAAAAAAAAAAAAAAA')
         return dash.no_update, True, dash.no_update
 
 ########################################################################################################################################################################################################
