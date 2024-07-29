@@ -1,6 +1,7 @@
 import dash
 from dash import dcc, html, callback, ctx, callback_context
 from dash.dependencies import Input, Output, State
+from dash.exceptions import PreventUpdate
 
 import base64
 import os
@@ -36,6 +37,28 @@ aap_dir = os.path.join(os.getcwd(), 'assets','_results','Amino_Acid_Panel','Fina
 # Get the parent directory
 parent_directory = os.path.dirname(current_directory)
 input_temp_dir = os.path.join(os.getcwd(),'input_temp')
+
+generate_button_disabled_style={
+    'margin': '10px 0',
+    'padding': '10px 20px',
+    'background-color': '#bcbcbc',
+    'color': 'white',
+    'border': 'none',
+    'border-radius': '5px',
+    'cursor': 'pointer',
+    #'transition': 'background-color 0.3s ease',
+}    
+
+generate_button_enabled_style={
+    'margin': '10px 0',
+    'padding': '10px 20px',
+    'background-color': '#4CAF50',
+    'color': 'white',
+    'border': 'none',
+    'border-radius': '5px',
+    'cursor': 'pointer',
+    #'transition': 'background-color 0.3s ease',
+}    
 
 
 ########################################################################################################################################################################################################
@@ -96,9 +119,6 @@ def generate_report_async(runfolder, metadata_file_path, result_sheet_path, user
     folder_identifier['Runfolder Name'] = runfolder
     print("Defining folder_identifier Download Link")
     folder_identifier['Download Link'] = f"[{folder_identifier['Test Name']} - {folder_identifier['Result Type']} - {runfolder}](http://{host}:{port}/{aap_final_report_download_path})"
-
-    print("Sleep!!!!!!")
-
 
     print("Write folder_identifier.json")
     with open(os.path.join(aap_dir, runfolder, 'folder_identifier.json'), 'w') as json_file:
@@ -198,16 +218,7 @@ def layout():
             ], style={'display': 'inline-block', 'width': '45%', 'marginRight': '1.5%'}),
         ], style={'display': 'flex', 'flexDirection': 'row', 'justifyContent': 'space-between', 'fontFamily':'Montserrat, sans-serif'}),
         
-        html.Button('Generate Final Report!', id='button-generate-report', n_clicks=0, style={
-            'margin': '10px 0',
-            'padding': '10px 20px',
-            'background-color': '#4CAF50',
-            'color': 'white',
-            'border': 'none',
-            'border-radius': '5px',
-            'cursor': 'pointer',
-            'transition': 'background-color 0.3s ease',
-        }, disabled=False),
+        html.Button('Generate Final Report!', id='button-generate-report', n_clicks=0, style=generate_button_enabled_style, disabled=False),
         
         html.Br(),
         html.Br(),
@@ -215,8 +226,8 @@ def layout():
         # Interval component for polling report status
         dcc.Interval(
             id='interval-report-check',
-            interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
-            n_intervals=1,
+            interval=1000,  # in milliseconds, adjust as needed (5000ms = 5s)
+            n_intervals=None, # interval 500, n_intervals=5 
             disabled=True,  # Start disabled and enable after report generation is triggered
         ),
 
@@ -308,7 +319,7 @@ def update_metadata_file(metadata_filename, metadata_contents):
      Output('upload-metadata-file', 'disabled'),
      Output('upload-result-sheet', 'disabled'),
      Output('button-generate-report', 'disabled'),
-     #Output('button-generate-report', 'style'),
+     Output('button-generate-report', 'style'),
      ],
     [Input('button-generate-report', 'n_clicks')],
     [State('upload-metadata-file', 'filename'),
@@ -316,7 +327,7 @@ def update_metadata_file(metadata_filename, metadata_contents):
      State('input-runfolder', 'value')],
 )
 def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_filename, runfolder):
-    if n_clicks > 0: #  and
+    if n_clicks > 0:
         if current_user.is_authenticated:
             current_user_id = current_user.id
 
@@ -330,7 +341,7 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
         
         if missing_components:
             return (f'Missing component(s): {", ".join(missing_components)}. Please complete all required fields to generate the report.', 
-                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update#, dash.no_update  # This output does not change
+                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update  # This output does not change
                     )
         
         ###>>>>>>>>>>>>>>>>>>>>>>>>> FILE MOVING
@@ -400,22 +411,11 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
 
         print("Start Threading!")
         threading.Thread(target=generate_report_async, args=(runfolder, metadata_file_path, result_sheet_path, current_user_id)).start()
-        generate_button_disabled_style={
-            'margin': '10px 0',
-            'padding': '10px 20px',
-            'background-color': '#bcbcbc',
-            'color': 'white',
-            'border': 'none',
-            'border-radius': '5px',
-            'cursor': 'pointer',
-            #'transition': 'background-color 0.3s ease',
-        }    
     
-        return f'{log_current_time()} All file has been uploaded. Generating the final report. Do not refresh the webpage!', False, True, True, True, True#, generate_button_disabled_style
+        return f'{log_current_time()} All file has been uploaded. Generating the final report. Do not refresh the webpage!', False, True, True, True, True, generate_button_disabled_style
     else:
-        return 'Please upload the necessary files and enter the Runfolder name to generate the report.', True, dash.no_update, dash.no_update, dash.no_update, dash.no_update#, dash.no_update
+        return 'Please upload the necessary files and enter the Runfolder name to generate the report.', True, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
 
-# Callback to check report status and trigger download
 @callback(
     [Output('output-container-2', 'children'),
      Output('interval-report-check', 'disabled',allow_duplicate=True),
@@ -425,21 +425,34 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
      State('upload-result-sheet', 'filename'),
      State('input-runfolder', 'value')],
     prevent_initial_call=True,
-    
 )
 def download_report(n_intervals, metadata_file_filename, result_sheet_filename, runfolder):
-    if n_intervals:
-        report_path = os.path.join(aap_dir,f"{runfolder.replace(' ','_')}.zip")
-        print('report_path:',report_path)
-        print('Download Report Interval Checking!!!!')
-
+    if n_intervals is None:
+        raise PreventUpdate
+    
+    report_path = os.path.join(aap_dir, f"{runfolder.replace(' ','_')}.zip")
+    
+    try:
         if os.path.exists(report_path):
-            print('Report Done!')
-            return [f'{log_current_time()} Report generation is finished. The report has been downloaded; please check the Download directory. ', html.Br(), html.Br() ,html.B('You can refresh the page if you want to enter a new query.')], True, dcc.send_file(report_path)
+            return [
+                f'{log_current_time()} Report generation is finished. The report has been downloaded; please check the Download directory.', 
+                True, 
+                dcc.send_file(report_path)
+            ]
         else:
-            print('Report In Progress!!')
-            return f'{log_current_time()} Report is still being generated. Please wait...', False, dash.no_update
-    else:
-        return dash.no_update, True, dash.no_update
+            print('--------------------------')
+            return [
+                f'{log_current_time()} Report is still being generated. Please wait...', 
+                False, 
+                dash.no_update
+            ]
+    except Exception as e:
+        # Log the error and inform the user
+        print(f"Error during report download: {e}")
+        return [
+            f"An error occurred during report generation: {str(e)}", 
+            True, 
+            dash.no_update
+        ]
 
 ########################################################################################################################################################################################################

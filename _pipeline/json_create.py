@@ -225,13 +225,18 @@ def create_gauge_chart(age_class, measured_result, amino_acid, ref_db, outdir_pa
     #plt.show()
 
     image_save_path = os.path.join(outdir_path, amino_acid+"_graph.png")
+    print('image_save_path:',image_save_path)
     plt.savefig(image_save_path, dpi=400, bbox_inches='tight')
     plt.close(fig)  # Close the figure to release memory
 
 def json_create(report_df, ref_db, runfolder, workdir):
     print('Starting json_create!!!!!')
+    
     print('loop report_df!!!!!')
+
     for i in report_df.index:
+        
+        
         print('Create metadata!!!!!')
         #####Create metadata
         report_dict = {'metadata':{},'test_result':{}}
@@ -244,28 +249,24 @@ def json_create(report_df, ref_db, runfolder, workdir):
         report_dict['metadata']['Ref. Number'] = report_df['ref_number'][sample_enumerator]
         report_dict['metadata']['DoB'] = report_df['dob'][sample_enumerator]
 
+        print('Birth and Age calculation!!!!!')
+        birth_date_str = report_dict['metadata']['DoB']
+        age = calculate_age(birth_date_str)
+        age_class = determine_age_class(age)
+
         print('Create out_folder!!!!!')
         ##### Create out_folder
         out_folder = os.path.join(runfolder, patient_id)
-
         outdir_path = os.path.join(workdir, out_folder)
         
         print('Check if outdir_path folder already exists!!!!!')
         # Check if the folder already exists
         if not os.path.exists(outdir_path):
             # Create the folder
-            os.makedirs(outdir_path)
-        
-
-        print('Birth and Age calculation!!!!!')
-        birth_date_str = report_dict['metadata']['DoB']
-        age = calculate_age(birth_date_str)
-        age_class = determine_age_class(age)
+            os.makedirs(outdir_path)    
 
         #####Create test_result
         print('Create test_result!!!!!')
-        #report_dict['test_result']
-
         print('Loop index ref_db!!!!!')
         for index in ref_db.index:
             report_dict['test_result'][index] = {"test_name":ref_db.at[index,'amino_acid']}
@@ -276,17 +277,12 @@ def json_create(report_df, ref_db, runfolder, workdir):
             ref_value = str(ref_db.at[index,age_class_dict[age_class]["bottom"]]) + ' - '+ str(ref_db.at[index,age_class_dict[age_class]["up"]])
             report_dict['test_result'][index]['ref_value'] = ref_value
             report_dict['test_result'][index]['result_interpretation'] = determine_result(amino_acid=index, measured_result=measured_value, ref_db=ref_db, age_class=age_class)
-            print(f'create_gauge_chart!!!!! {index}')
-            #time.sleep(3)
-            ##### Create gauge charts
+            #print(f'create_gauge_chart!!!!! {index}')
             create_gauge_chart(age_class=age_class, measured_result=measured_value, amino_acid=index,ref_db=ref_db,outdir_path=outdir_path)
 
-        print('json.dumps!!!!!')
-        json_str = json.dumps(report_dict, indent=4, default=custom_serializer)
-
         print('CREATING JSON FILE!!!!!')
-        #print('SLEEP !!!!!')
-        #time.sleep(20)
+
         #### Write JSON string to a file
         with open(f'{outdir_path}/{patient_id}_AminoAcidPanel.json', 'w') as file:
+            json_str = json.dumps(report_dict, indent=4, default=custom_serializer)
             file.write(json_str)

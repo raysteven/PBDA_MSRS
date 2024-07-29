@@ -9,6 +9,9 @@ import os
 import glob
 import json
 import pandas as pd
+import requests
+import re
+from datetime import datetime
 
 from flask_login import current_user
 from utils.login_handler import require_login
@@ -28,6 +31,27 @@ parent_directory = os.path.dirname(current_directory)
 
 result_dir = os.path.join(current_directory, 'assets','_results')
 
+
+def calculate_processing_time(start_time_str):
+    
+    start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M:%S')
+    # Get the current time
+    stop_time = datetime.now()
+
+    # Calculate the duration
+    duration = stop_time - start_time
+
+    # Get the total duration in seconds
+    duration_seconds = duration.total_seconds()
+
+    # Get hours, minutes, and seconds
+    hours, remainder = divmod(duration_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    # Print the results
+    return f"Time elapsed: {int(hours)} hours, {int(minutes)} minutes, {int(seconds)} seconds"
+
+
 def create_dataframe_from_json(directories=None):
     
     if directories is None:
@@ -43,7 +67,7 @@ def create_dataframe_from_json(directories=None):
     # Process each directory
     for base_dir in directories:
         # Find all JSON files in the current directory
-        json_files = glob.glob(os.path.join(base_dir, '**', '*.json'), recursive=True)
+        json_files = glob.glob(os.path.join(base_dir, '**', 'folder_identifier.json'), recursive=True)
         
         # Get file modification times
         files_with_mtime = [(file, os.path.getmtime(file)) for file in json_files]
@@ -55,64 +79,39 @@ def create_dataframe_from_json(directories=None):
         for i, (file, _) in enumerate(files_with_mtime):
             with open(file, 'r') as f:
                 json_data = json.load(f)
-                #json_data['No'] = i + 1  # Add the numbering if needed
+                
+                date_created = json_data['Date Created']
+                time_created = json_data['Time Created']
+                start_time_str = f"{date_created} {time_created}:00"
+
+                # Modify the download link if the file does not exist
+                download_link = json_data.get("Download Link", "")
+                # Use a regular expression to find the URL
+                match = re.search(r'\((http[^\)]+)\)', download_link)
+
+                if match:
+                    url = match.group(1)                
+
+                if not file_exists(url):
+                    duration_file_process = calculate_processing_time(start_time_str)
+                    json_data["Download Link"] = f"File is being generated, please wait. | {duration_file_process}"
+                
+                # Add the numbering if needed
+                # json_data['No'] = i + 1  
+                
                 data.append(json_data)
     
     # Create DataFrame from the collected data
     df = pd.DataFrame(data)
-    
-    # Optionally sort and reindex DataFrame
-    # df = df.sort_values(by='No', ascending=False).reset_index(drop=True)
-    # Move 'No' column to the first position if needed
-    # cols = ['No'] + [col for col in df.columns if col != 'No']
-    # df = df[cols]
-    
     return df
 
+def file_exists(url):
+    try:
+        response = requests.head(url)
+        return response.status_code == 200
+    except requests.RequestException:
+        return False
 
-
-
-def get_main_table_x(df):
-    
-    main_table = dash_table.DataTable(
-                    id=f'editable-table-{pgname}',
-                    columns=[{"name": i, "id": i} for i in df.columns if i != "Variant_Record"],
-                    data=df.to_dict('records'), #on Variant Vault -> df.iloc[:rows_per_page].to_dict('records') -> to save memory when render large data, but it is not necessary for this case.
-                    editable=False,
-                    style_table={
-                        'minWidth': '100%',
-                        'overflowX': 'auto'  # Ensures horizontal scrolling if necessary
-                    },
-                    style_data={
-                        'fontSize': '14px',
-                        'whiteSpace': 'normal',  # Allows text wrapping within cells
-                        'height': 'auto',  # Adjusts row height to content
-                        'minWidth': '50px',  # Minimum width for all data cells
-                    },
-                    style_header={
-                        'fontSize': '14px',
-                        'fontWeight': 'bold',
-                        'whiteSpace': 'normal',  # Allows text wrapping within header cells
-                        'height': 'auto',  # Adjusts header height to content
-                        'minWidth': '50px',  # Minimum width for header cells
-                    },
-                    style_cell_conditional=[
-                        # Apply custom minWidth for specific columns here if needed
-                        # Example:
-                        {'if': {'column_id': 'user'},
-                        'minWidth': '10px',  'maxWidth': '10px'},
-                    ],
-                    #fixed_columns={'headers': True, 'data': 3},
-                    page_current=0,
-                    page_size=5, #rows_per_page
-                    page_action='native', #'native', 'custom', 'none'
-                    virtualization=False,
-                    cell_selectable=True,
-                    sort_action="native",
-                    sort_mode="multi",
-                )
-    
-    return main_table
 
 def get_main_table(df):
 
@@ -233,8 +232,6 @@ def layout():
 
                     ]
                 )
-
-
 
             ]
         )
