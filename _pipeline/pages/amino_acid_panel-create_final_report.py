@@ -216,7 +216,7 @@ def layout():
         dcc.Interval(
             id='interval-report-check',
             interval=5000,  # in milliseconds, adjust as needed (5000ms = 5s)
-            n_intervals=0,
+            n_intervals=1,
             disabled=True,  # Start disabled and enable after report generation is triggered
         ),
 
@@ -308,6 +308,7 @@ def update_metadata_file(metadata_filename, metadata_contents):
      Output('upload-metadata-file', 'disabled'),
      Output('upload-result-sheet', 'disabled'),
      Output('button-generate-report', 'disabled'),
+     #Output('button-generate-report', 'style'),
      ],
     [Input('button-generate-report', 'n_clicks')],
     [State('upload-metadata-file', 'filename'),
@@ -329,7 +330,7 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
         
         if missing_components:
             return (f'Missing component(s): {", ".join(missing_components)}. Please complete all required fields to generate the report.', 
-                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update  # This output does not change
+                    dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update#, dash.no_update  # This output does not change
                     )
         
         ###>>>>>>>>>>>>>>>>>>>>>>>>> FILE MOVING
@@ -399,10 +400,20 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
 
         print("Start Threading!")
         threading.Thread(target=generate_report_async, args=(runfolder, metadata_file_path, result_sheet_path, current_user_id)).start()
-
-        return f'{log_current_time()} All file has been uploaded. Generating the final report. Do not refresh the webpage!', False, True, True, True, True
+        generate_button_disabled_style={
+            'margin': '10px 0',
+            'padding': '10px 20px',
+            'background-color': '#bcbcbc',
+            'color': 'white',
+            'border': 'none',
+            'border-radius': '5px',
+            'cursor': 'pointer',
+            #'transition': 'background-color 0.3s ease',
+        }    
+    
+        return f'{log_current_time()} All file has been uploaded. Generating the final report. Do not refresh the webpage!', False, True, True, True, True#, generate_button_disabled_style
     else:
-        return 'Please upload the necessary files and enter the Runfolder name to generate the report.', True, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        return 'Please upload the necessary files and enter the Runfolder name to generate the report.', True, dash.no_update, dash.no_update, dash.no_update, dash.no_update#, dash.no_update
 
 # Callback to check report status and trigger download
 @callback(
@@ -422,8 +433,6 @@ def download_report(n_intervals, metadata_file_filename, result_sheet_filename, 
 
         print('Download Report Interval Checking')
 
-        time.sleep(20)
-
         if os.path.exists(report_path):
             print('Report Done!')
             return [f'{log_current_time()} Report generation is finished. The report has been downloaded; please check the Download directory. ', html.Br(), html.Br() ,html.B('You can refresh the page if you want to enter a new query.')], True, dcc.send_file(report_path)
@@ -431,7 +440,6 @@ def download_report(n_intervals, metadata_file_filename, result_sheet_filename, 
             print('Report In Progress!!')
             return f'{log_current_time()} Report is still being generated. Please wait...', False, dash.no_update
     else:
-        print('AHAAAAAAAAAAAAAAAAAAAAAAA')
         return dash.no_update, True, dash.no_update
 
 ########################################################################################################################################################################################################
