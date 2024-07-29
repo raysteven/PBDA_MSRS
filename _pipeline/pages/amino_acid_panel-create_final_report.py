@@ -428,10 +428,10 @@ def generate_report_initiation(n_clicks, metadata_file_filename, result_sheet_fi
     
 )
 def download_report(n_intervals, metadata_file_filename, result_sheet_filename, runfolder):
-    if n_intervals > 0:
+    if n_intervals:
         report_path = os.path.join(aap_dir,f"{runfolder.replace(' ','_')}.zip")
-
-        print('Download Report Interval Checking')
+        print('report_path:',report_path)
+        print('Download Report Interval Checking!!!!')
 
         if os.path.exists(report_path):
             print('Report Done!')
