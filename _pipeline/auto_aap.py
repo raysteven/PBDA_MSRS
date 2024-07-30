@@ -95,7 +95,7 @@ def auto_aap(runfolder,sample_sheet_path, result_sheet_path):
     json_create(report_df=report_df, ref_db=aap_db, runfolder=runfolder, workdir=aap_dir)
 
     print('auto_aap: JSON PDF')
-    #json_to_pdf(report_df=report_df, runfolder=runfolder,workdir=aap_dir)
+    json_to_pdf(report_df=report_df, runfolder=runfolder,workdir=aap_dir)
 
     print('auto_aap: Zip Folder')
     zip_folder(runfolder_dir, os.path.join(aap_dir,f"{runfolder.replace(' ','_')}.zip"))
