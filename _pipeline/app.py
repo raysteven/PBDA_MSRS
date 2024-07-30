@@ -220,54 +220,57 @@ def create_layout(app):
                         )
                     ]
                 ),
-                dmc.Accordion(
-                    children=[
-                        dmc.AccordionItem(
-                            value="generate-files",
-                            children=[
-                                dmc.AccordionControl(
-                                    children=[
-                                        DashIconify(icon="tabler:chart-histogram", width=20, height=20),
-                                        " Cortisol"
-                                    ],
-                                    styles={"root": text_style}
-                                ),
-                                dmc.AccordionPanel(
-                                    [
-                                        dcc.Link(
-                                            dmc.Button(
-                                                children=[
-                                                    dmc.Group([
-                                                    DashIconify(icon="tabler:user-scan", width=20, height=20),
-                                                    #dmc.Space(h=10),
-                                                    dmc.Text("Metadata")
-                                                    ])
-                                                ],
-                                                styles={"root": text_style},
-                                                variant="subtle"
-                                            ),
-                                            href="/generate/metadata-file"
-                                        ),
-                                        dcc.Link(
-                                            dmc.Button(
-                                                children=[
-                                                    dmc.Group([
-                                                    DashIconify(icon="tabler:clipboard-text", width=20, height=20),
-                                                    #dmc.Space(h=10),
-                                                    dmc.Text("Final Report")
-                                                    ])
-                                                ],
-                                                styles={"root": text_style},
-                                                variant="subtle"
-                                            ),
-                                            href="/generate/final-report"
-                                        ),                                              
-                                    ]
-                                )
-                            ],
-                        )
-                    ]
-                ),
+                # ### Code For Cortisol
+                # '''
+                # dmc.Accordion(
+                #     children=[
+                #         dmc.AccordionItem(
+                #             value="generate-files",
+                #             children=[
+                #                 dmc.AccordionControl(
+                #                     children=[
+                #                         DashIconify(icon="tabler:chart-histogram", width=20, height=20),
+                #                         " Cortisol"
+                #                     ],
+                #                     styles={"root": text_style}
+                #                 ),
+                #                 dmc.AccordionPanel(
+                #                     [
+                #                         dcc.Link(
+                #                             dmc.Button(
+                #                                 children=[
+                #                                     dmc.Group([
+                #                                     DashIconify(icon="tabler:user-scan", width=20, height=20),
+                #                                     #dmc.Space(h=10),
+                #                                     dmc.Text("Metadata")
+                #                                     ])
+                #                                 ],
+                #                                 styles={"root": text_style},
+                #                                 variant="subtle"
+                #                             ),
+                #                             href="/generate/metadata-file"
+                #                         ),
+                #                         dcc.Link(
+                #                             dmc.Button(
+                #                                 children=[
+                #                                     dmc.Group([
+                #                                     DashIconify(icon="tabler:clipboard-text", width=20, height=20),
+                #                                     #dmc.Space(h=10),
+                #                                     dmc.Text("Final Report")
+                #                                     ])
+                #                                 ],
+                #                                 styles={"root": text_style},
+                #                                 variant="subtle"
+                #                             ),
+                #                             href="/generate/final-report"
+                #                         ),                                              
+                #                     ]
+                #                 )
+                #             ],
+                #         )
+                #     ]
+                # ),'''
+                # ###
             ]
         ),
     ],

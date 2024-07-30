@@ -180,53 +180,53 @@ def layout():
                         ], style={'margin':'20px'}),
 
 
-                        html.Div([
-                            html.H5('Example Input and Output Files'),
-                            html.Div([
-                            html.P([
-                                    dcc.Download(id=f'download-file-{pgname}'),
+                        # html.Div([
+                        #     html.H5('Example Input and Output Files'),
+                        #     html.Div([
+                        #     html.P([
+                        #             dcc.Download(id=f'download-file-{pgname}'),
                                     
-                                    html.A(
-                                        'LKJ',
-                                        id='download-link-lkj',
-                                        href="/assets/LKJ_Example.zip",
-                                    ),
+                        #             html.A(
+                        #                 'LKJ',
+                        #                 id='download-link-lkj',
+                        #                 href="/assets/LKJ_Example.zip",
+                        #             ),
                                     
-                                    html.Br(),
-                                    html.A(
-                                        'Metadata',
-                                        id='download-link-metadata',
-                                        href="/assets/Metadata_Example.zip",
-                                    ),
+                        #             html.Br(),
+                        #             html.A(
+                        #                 'Metadata',
+                        #                 id='download-link-metadata',
+                        #                 href="/assets/Metadata_Example.zip",
+                        #             ),
                                     
-                                    html.Br(),
-                                    html.A(
-                                        'Result Raw',
-                                        id='download-link-result-raw',
-                                        href="/assets/Raw_Example.zip",
-                                    ),
+                        #             html.Br(),
+                        #             html.A(
+                        #                 'Result Raw',
+                        #                 id='download-link-result-raw',
+                        #                 href="/assets/Raw_Example.zip",
+                        #             ),
                                     
-                                    html.Br(),
-                                    html.A(
-                                        'Report Zip',
-                                        id='download-link-report-zip',
-                                        href="/assets/Report_Example.zip",
-                                    ),
+                        #             html.Br(),
+                        #             html.A(
+                        #                 'Report Zip',
+                        #                 id='download-link-report-zip',
+                        #                 href="/assets/Report_Example.zip",
+                        #             ),
                                     
-                                    ]),
-                            ], style={'margin':'0'})
-                        ], style={'margin-top':'150px', 'margin-left':'20px','fontFamily':'Monaco, monospace'}),
+                        #             ]),
+                        #     ], style={'margin':'0'})
+                        # ], style={'margin-top':'150px', 'margin-left':'20px','fontFamily':'Monaco, monospace'}),
 
 
-                        html.Div([
-                            html.H5('Version'),
-                            html.Div([
-                            html.P(['- ',html.B('1.0.1'),' : Result Graph Adjustment, Added ', html.U('Result CSV'),'  to the Result Zip, Backend Improvements',
-                                    html.Br(),
-                                    '- ',html.B('1.0.0'),' : Initial Stable Release',
-                                    ]),
-                            ], style={'margin':'0'})
-                        ], style={'margin-top':'150px', 'margin-left':'20px','fontFamily':'Monaco, monospace'}),
+                        # html.Div([
+                        #     html.H5('Version'),
+                        #     html.Div([
+                        #     html.P(['- ',html.B('1.0.1'),' : Result Graph Adjustment, Added ', html.U('Result CSV'),'  to the Result Zip, Backend Improvements',
+                        #             html.Br(),
+                        #             '- ',html.B('1.0.0'),' : Initial Stable Release',
+                        #             ]),
+                        #     ], style={'margin':'0'})
+                        # ], style={'margin-top':'150px', 'margin-left':'20px','fontFamily':'Monaco, monospace'}),
 
 
 
