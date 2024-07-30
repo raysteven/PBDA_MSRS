@@ -43,11 +43,31 @@ def calculate_age(birth_date_str):
 
 
 age_class_dict = {
-    "class_1":{"bottom":"reference_range_bottom_anak_1","up":"reference_range_up_anak_1"},
-    "class_2":{"bottom":"reference_range_bottom_anak_2","up":"reference_range_up_anak_2"},
-    "class_3":{"bottom":"reference_range_bottom_anak_3","up":"reference_range_up_anak_3"},
-    "class_4":{"bottom":"reference_range_bottom_dewasa","up":"reference_range_up_dewasa"}
-}
+    "class_1":{"bottom":"reference_range_bottom_anak_1",
+               "up":"reference_range_up_anak_1",
+               "result_low":"result_low_anak_1",
+               "result_optimal":"result_optimal_anak_1",
+               "result_high":"result_high_anak_1"
+               },
+    "class_2":{"bottom":"reference_range_bottom_anak_2",
+               "up":"reference_range_up_anak_2",
+               "result_low":"result_low_anak_2",
+               "result_optimal":"result_optimal_anak_2",
+               "result_high":"result_high_anak_2"
+               },
+    "class_3":{"bottom":"reference_range_bottom_anak_3",
+               "up":"reference_range_up_anak_3",
+               "result_low":"result_low_anak_3",
+               "result_optimal":"result_optimal_anak_3",
+               "result_high":"result_high_anak_3"
+               },
+    "class_4":{"bottom":"reference_range_bottom_dewasa",
+               "up":"reference_range_up_dewasa",
+               "result_low":"result_low_dewasa",
+               "result_optimal":"result_optimal_dewasa",
+               "result_high":"result_high_dewasa"
+               }
+    }
 
 
 def determine_age_class(age):
@@ -82,11 +102,11 @@ def determine_result(amino_acid, measured_result, ref_db, age_class):
     optimal_up = ref_db.at[index,age_class_dict[age_class]["up"]]
     
     if optimal_bottom <= measured_result <= optimal_up:
-        interpretation_result = ref_db.at[index,'result_optimal']
+        interpretation_result = ref_db.at[index,age_class_dict[age_class]['result_optimal']]
     elif measured_result < optimal_bottom :
-        interpretation_result = ref_db.at[index,'result_low']
+        interpretation_result = ref_db.at[index,age_class_dict[age_class]['result_low']]
     elif measured_result > optimal_up :
-        interpretation_result = ref_db.at[index,'result_high']
+        interpretation_result = ref_db.at[index,age_class_dict[age_class]['result_high']]
 
     return interpretation_result
 
@@ -101,6 +121,11 @@ def normalize_value(x, a, b, c, d):
     Returns:
     - The normalized value of x according to the custom scheme.
     """
+    #print('x:',x)
+    #print('a:',a)
+    #print('b:',b)
+    #print('c:',c)
+    #print('d:',d)
 
     if x < a or x > d:
         raise ValueError("The value x must be within the range [a, d].")
@@ -118,6 +143,7 @@ def normalize_value(x, a, b, c, d):
 def create_gauge_chart(age_class, measured_result, amino_acid, ref_db, outdir_path):
     index = amino_acid
 
+    #print(f"=============================================> {index}")
     #menyesuaikan chartnya dengan kebutuhan Lab MS dimana kalau value terukur masih dalam reference range, sebenarnya masih hijau tapi mepet di perbatasan.
     #batas atas dan bawah dilebihi 30% -> batas atas * 1,3 & batas bawah * 0.7 
 
